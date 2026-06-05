@@ -2,10 +2,11 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>省エネ買い替えシミュレーター</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
+button,input,select{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 :root{
   --blue:#1d4ed8;--blue-l:#dbeafe;--blue-m:#93c5fd;
   --green:#15803d;--green-l:#dcfce7;--green-m:#86efac;
@@ -662,7 +663,12 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',system-ui,sans-serif;backg
       <input type="number" id="unitPrice" value="31" min="1" max="100" step="0.5">
       <span>円／kWh</span>
     </div>
-    <button class="btn btn-r" id="admin-toggle" title="2秒長押しで管理者画面へ">🔐</button>
+    <div class="unit-box">
+      <label>水道単価</label>
+      <input type="number" id="waterRate" value="0.2725" min="0.1" max="1" step="0.0025">
+      <span>円／L</span>
+    </div>
+    <button class="btn btn-r" id="admin-toggle" title="2秒長押しで管理者画面へ" style="display:none">🔐</button>
   </div>
 </div>
 
@@ -698,7 +704,11 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',system-ui,sans-serif;backg
       <div class="tv-slabel">テレビの種類</div>
       <div class="sg" id="tv-type-btns"></div>
       <div class="new-product-section">
-        <div class="nps-title">✨ 新製品情報（プライスカードを見て入力）</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div class="nps-title" style="margin-bottom:0">✨ 新製品情報（プライスカードを見て入力）</div>
+          <button onclick="toggleNewPurchaseMode()" style="font-size:.72rem;padding:6px 10px;border-radius:20px;border:2px solid var(--gray-200);background:var(--gray-50);color:var(--gray-600);cursor:pointer;white-space:nowrap;touch-action:manipulation">新規購入モード</button>
+        </div>
+        <div style="font-size:.72rem;font-weight:800;color:#2563eb;margin-bottom:6px">製品A</div>
         <div class="nps-grid">
           <div class="nps-field">
             <label>年間消費電力量</label>
@@ -710,6 +720,23 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',system-ui,sans-serif;backg
           <div class="nps-field">
             <label>本体価格</label>
             <button class="nps-trigger" id="nps-price-btn" onclick="openPriceNumpad()">
+              <span class="nps-trigger-val">タップして入力</span>
+              <span class="nps-trigger-unit">円</span>
+            </button>
+          </div>
+        </div>
+        <div style="font-size:.72rem;font-weight:800;color:#16a34a;margin:10px 0 6px">製品B（比較用）</div>
+        <div class="nps-grid">
+          <div class="nps-field">
+            <label>年間消費電力量</label>
+            <button class="nps-trigger" id="nps-kwh-b-btn" onclick="openKwhBNumpad()">
+              <span class="nps-trigger-val">タップして入力</span>
+              <span class="nps-trigger-unit">kWh/年</span>
+            </button>
+          </div>
+          <div class="nps-field">
+            <label>本体価格</label>
+            <button class="nps-trigger" id="nps-price-b-btn" onclick="openPriceBNumpad()">
               <span class="nps-trigger-val">タップして入力</span>
               <span class="nps-trigger-unit">円</span>
             </button>
@@ -727,7 +754,11 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',system-ui,sans-serif;backg
       <div class="sg" id="ac-era-btns"></div>
       <p class="ac-hint">※冷房8時間/日・90日、暖房7時間/日・90日の概算です。</p>
       <div class="new-product-section">
-        <div class="nps-title">✨ 新製品情報（プライスカードを見て入力）</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div class="nps-title" style="margin-bottom:0">✨ 新製品情報（プライスカードを見て入力）</div>
+          <button onclick="toggleNewPurchaseMode()" id="new-purchase-btn-aircon" style="font-size:.72rem;padding:6px 10px;border-radius:20px;border:2px solid var(--gray-200);background:var(--gray-50);color:var(--gray-600);cursor:pointer;white-space:nowrap;touch-action:manipulation">新規購入モード</button>
+        </div>
+        <div style="font-size:.72rem;font-weight:800;color:#2563eb;margin-bottom:6px">製品A</div>
         <div class="nps-grid">
           <div class="nps-field">
             <label>年間消費電力量</label>
@@ -744,6 +775,25 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',system-ui,sans-serif;backg
             </button>
           </div>
         </div>
+        <div id="product-b-section-aircon">
+          <div style="font-size:.72rem;font-weight:800;color:#16a34a;margin:10px 0 6px">製品B（比較用）</div>
+          <div class="nps-grid">
+            <div class="nps-field">
+              <label>年間消費電力量</label>
+              <button class="nps-trigger" id="nps-kwh-b-btn" onclick="openKwhBNumpad()">
+                <span class="nps-trigger-val">タップして入力</span>
+                <span class="nps-trigger-unit">kWh/年</span>
+              </button>
+            </div>
+            <div class="nps-field">
+              <label>本体価格</label>
+              <button class="nps-trigger" id="nps-price-b-btn" onclick="openPriceBNumpad()">
+                <span class="nps-trigger-val">タップして入力</span>
+                <span class="nps-trigger-unit">円</span>
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -756,7 +806,11 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',system-ui,sans-serif;backg
       <div class="sg" id="fridge-era-btns"></div>
       <div class="fridge-warn">💡 10年以上前の冷蔵庫は、最新モデルの約<strong>1.5〜2倍</strong>の電力を使用する場合があります</div>
       <div class="new-product-section">
-        <div class="nps-title">✨ 新製品情報（プライスカードを見て入力）</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div class="nps-title" style="margin-bottom:0">✨ 新製品情報（プライスカードを見て入力）</div>
+          <button onclick="toggleNewPurchaseMode()" style="font-size:.72rem;padding:6px 10px;border-radius:20px;border:2px solid var(--gray-200);background:var(--gray-50);color:var(--gray-600);cursor:pointer;white-space:nowrap;touch-action:manipulation">新規購入モード</button>
+        </div>
+        <div style="font-size:.72rem;font-weight:800;color:#2563eb;margin-bottom:6px">製品A</div>
         <div class="nps-grid">
           <div class="nps-field">
             <label>年間消費電力量</label>
@@ -768,6 +822,23 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',system-ui,sans-serif;backg
           <div class="nps-field">
             <label>本体価格</label>
             <button class="nps-trigger" id="nps-price-btn" onclick="openPriceNumpad()">
+              <span class="nps-trigger-val">タップして入力</span>
+              <span class="nps-trigger-unit">円</span>
+            </button>
+          </div>
+        </div>
+        <div style="font-size:.72rem;font-weight:800;color:#16a34a;margin:10px 0 6px">製品B（比較用）</div>
+        <div class="nps-grid">
+          <div class="nps-field">
+            <label>年間消費電力量</label>
+            <button class="nps-trigger" id="nps-kwh-b-btn" onclick="openKwhBNumpad()">
+              <span class="nps-trigger-val">タップして入力</span>
+              <span class="nps-trigger-unit">kWh/年</span>
+            </button>
+          </div>
+          <div class="nps-field">
+            <label>本体価格</label>
+            <button class="nps-trigger" id="nps-price-b-btn" onclick="openPriceBNumpad()">
               <span class="nps-trigger-val">タップして入力</span>
               <span class="nps-trigger-unit">円</span>
             </button>
@@ -788,7 +859,11 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',system-ui,sans-serif;backg
       <div class="tv-slabel" style="margin-top:12px">④ 週に何回使いますか？</div>
       <div class="sg" id="washer-freq-btns"></div>
       <div class="new-product-section">
-        <div class="nps-title">✨ 新製品情報（プライスカードを見て入力）</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div class="nps-title" style="margin-bottom:0">✨ 新製品情報（プライスカードを見て入力）</div>
+          <button onclick="toggleNewPurchaseMode()" style="font-size:.72rem;padding:6px 10px;border-radius:20px;border:2px solid var(--gray-200);background:var(--gray-50);color:var(--gray-600);cursor:pointer;white-space:nowrap;touch-action:manipulation">新規購入モード</button>
+        </div>
+        <div style="font-size:.72rem;font-weight:800;color:#2563eb;margin-bottom:6px">製品A</div>
         <div class="nps-grid">
           <div class="nps-field">
             <label>年間消費電力量</label>
@@ -813,6 +888,23 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',system-ui,sans-serif;backg
           </div>
         </div>
         <p class="ac-hint" style="margin-top:8px">💧 水使用量はプライスカードの「標準使用水量」欄の数字を入力</p>
+        <div style="font-size:.72rem;font-weight:800;color:#16a34a;margin:10px 0 6px">製品B（比較用）</div>
+        <div class="nps-grid">
+          <div class="nps-field">
+            <label>年間消費電力量</label>
+            <button class="nps-trigger" id="nps-kwh-b-btn" onclick="openKwhBNumpad()">
+              <span class="nps-trigger-val">タップして入力</span>
+              <span class="nps-trigger-unit">kWh/年</span>
+            </button>
+          </div>
+          <div class="nps-field">
+            <label>本体価格</label>
+            <button class="nps-trigger" id="nps-price-b-btn" onclick="openPriceBNumpad()">
+              <span class="nps-trigger-val">タップして入力</span>
+              <span class="nps-trigger-unit">円</span>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -839,12 +931,18 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',system-ui,sans-serif;backg
           <div class="ac-hint" style="margin-top:4px;font-size:.68rem;padding:6px 8px">🔌 消費電力：1300W固定（庫内加熱）</div>
         </div>
       </div>
-      <div id="mw-result-area"></div>
       <div class="new-product-section">
-        <div class="nps-title">✨ 新製品情報（買い替え検討）</div>
+        <div class="nps-title">✨ 新製品情報</div>
         <div class="nps-grid">
           <div class="nps-field">
-            <label>新製品の本体価格</label>
+            <label>新製品の定格消費電力</label>
+            <button class="nps-trigger" id="nps-kwh-btn-microwave" onclick="openCatKwhNumpad('microwave')">
+              <span class="nps-trigger-val">タップして入力</span>
+              <span class="nps-trigger-unit">W</span>
+            </button>
+          </div>
+          <div class="nps-field">
+            <label>本体価格</label>
             <button class="nps-trigger" id="nps-price-btn-microwave" onclick="openCatPriceNumpad('microwave')">
               <span class="nps-trigger-val">タップして入力</span>
               <span class="nps-trigger-unit">円</span>
@@ -852,6 +950,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',system-ui,sans-serif;backg
           </div>
         </div>
       </div>
+      <div id="mw-result-area" style="display:none"></div>
     </div>
 
     <!-- 炊飯器専用診断カード -->
@@ -865,12 +964,18 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',system-ui,sans-serif;backg
       <div class="sg" id="rc-era-btns"></div>
       <div class="tv-slabel" style="margin-top:14px">④ 保温時間（1日あたり）<span style="background:#fed7aa;color:#9a3412;font-size:.62rem;font-weight:800;padding:2px 6px;border-radius:999px;margin-left:5px">電気代に直結！</span></div>
       <div class="sg" id="rc-warm-btns"></div>
-      <div id="rc-result-area"></div>
       <div class="new-product-section">
-        <div class="nps-title">✨ 新製品情報（買い替え検討）</div>
+        <div class="nps-title">✨ 新製品情報</div>
         <div class="nps-grid">
           <div class="nps-field">
-            <label>新製品の本体価格</label>
+            <label>新製品の定格消費電力</label>
+            <button class="nps-trigger" id="nps-kwh-btn-ricecooker" onclick="openCatKwhNumpad('ricecooker')">
+              <span class="nps-trigger-val">タップして入力</span>
+              <span class="nps-trigger-unit">Wh/回</span>
+            </button>
+          </div>
+          <div class="nps-field">
+            <label>本体価格</label>
             <button class="nps-trigger" id="nps-price-btn-ricecooker" onclick="openCatPriceNumpad('ricecooker')">
               <span class="nps-trigger-val">タップして入力</span>
               <span class="nps-trigger-unit">円</span>
@@ -878,6 +983,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',system-ui,sans-serif;backg
           </div>
         </div>
       </div>
+      <div id="rc-result-area" style="display:none"></div>
     </div>
 
     <!-- 温水洗浄便座専用診断カード -->
@@ -889,12 +995,18 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',system-ui,sans-serif;backg
       <div class="bd-row-btns" id="bd-era-btns"></div>
       <div class="tv-slabel" style="margin-top:12px">③ 省エネ設定</div>
       <div class="bd-row-btns" id="bd-eco-btns"></div>
-      <div id="bd-result-area"></div>
       <div class="new-product-section">
-        <div class="nps-title">✨ 新製品情報（買い替え検討）</div>
+        <div class="nps-title">✨ 新製品情報</div>
         <div class="nps-grid">
           <div class="nps-field">
-            <label>新製品の本体価格</label>
+            <label>新製品の年間消費電力量</label>
+            <button class="nps-trigger" id="nps-kwh-btn-bidet" onclick="openCatKwhNumpad('bidet')">
+              <span class="nps-trigger-val">タップして入力</span>
+              <span class="nps-trigger-unit">kWh/年</span>
+            </button>
+          </div>
+          <div class="nps-field">
+            <label>本体価格</label>
             <button class="nps-trigger" id="nps-price-btn-bidet" onclick="openCatPriceNumpad('bidet')">
               <span class="nps-trigger-val">タップして入力</span>
               <span class="nps-trigger-unit">円</span>
@@ -902,6 +1014,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',system-ui,sans-serif;backg
           </div>
         </div>
       </div>
+      <div id="bd-result-area" style="display:none"></div>
     </div>
 
     <!-- プリンター専用診断カード -->
@@ -913,12 +1026,18 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',system-ui,sans-serif;backg
       <div class="pr-row-btns" id="pr-volume-btns"></div>
       <div class="tv-slabel">③ 印刷内容</div>
       <div class="pr-row-btns" id="pr-color-btns"></div>
-      <div id="pr-result-area"></div>
       <div class="new-product-section">
-        <div class="nps-title">✨ エコタンクへの切り替えを検討</div>
+        <div class="nps-title">✨ 買い替え候補</div>
         <div class="nps-grid">
           <div class="nps-field">
-            <label>エコタンク機の本体価格</label>
+            <label>印刷コスト（円/枚）</label>
+            <button class="nps-trigger" id="nps-cpp-btn-printer" onclick="openPrinterCppNumpad()">
+              <span class="nps-trigger-val">タップして入力</span>
+              <span class="nps-trigger-unit">円/枚</span>
+            </button>
+          </div>
+          <div class="nps-field">
+            <label>本体価格</label>
             <button class="nps-trigger" id="nps-price-btn-printer" onclick="openCatPriceNumpad('printer')">
               <span class="nps-trigger-val">タップして入力</span>
               <span class="nps-trigger-unit">円</span>
@@ -926,6 +1045,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',system-ui,sans-serif;backg
           </div>
         </div>
       </div>
+      <div id="pr-result-area" style="display:none"></div>
     </div>
 
     <!-- 照明専用診断カード -->
@@ -937,8 +1057,26 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',system-ui,sans-serif;backg
       <div class="lt-type-grid" id="lt-type-btns"></div>
       <div class="tv-slabel">③ 1日の使用時間</div>
       <div class="lt-grid3" id="lt-hour-btns"></div>
-      <div id="lt-result-area"></div>
-      <p class="ac-hint" style="margin-top:8px">※シーリングライト1台あたり LED:30W / 蛍光灯:80W の概算値を使用します</p>
+      <div class="new-product-section">
+        <div class="nps-title">✨ 新製品情報</div>
+        <div class="nps-grid">
+          <div class="nps-field">
+            <label>LED照明の消費電力（1台）</label>
+            <button class="nps-trigger" id="nps-kwh-btn-light" onclick="openCatKwhNumpad('light')">
+              <span class="nps-trigger-val">タップして入力</span>
+              <span class="nps-trigger-unit">W/台</span>
+            </button>
+          </div>
+          <div class="nps-field">
+            <label>本体価格（1台）</label>
+            <button class="nps-trigger" id="nps-price-btn-light" onclick="openCatPriceNumpad('light')">
+              <span class="nps-trigger-val">タップして入力</span>
+              <span class="nps-trigger-unit">円</span>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div id="lt-result-area" style="display:none"></div>
     </div>
 
     <!-- 非表示フォームコンテナ（計算用・MVP方針で非表示） -->
@@ -1058,6 +1196,49 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',system-ui,sans-serif;backg
         <div class="bar-row">
           <div class="bar-hd"><span>買い替え後</span><span id="bl-n">—</span></div>
           <div class="bar-tr"><div class="bar-fill bf-n" id="bf-n" style="width:70%"></div></div>
+        </div>
+      </div>
+
+      <!-- 3機種比較テーブル（B機種入力時に表示） -->
+      <div id="compare3-panel" style="display:none;margin-top:14px">
+        <div style="font-size:.82rem;font-weight:800;color:var(--gray-700);margin-bottom:10px">📊 3機種比較</div>
+        <div style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:.78rem">
+            <thead>
+              <tr>
+                <th style="padding:8px 6px;background:var(--gray-100);border-radius:6px 0 0 6px;font-weight:700;color:var(--gray-500);text-align:left"></th>
+                <th style="padding:8px 6px;background:var(--gray-100);font-weight:700;color:var(--gray-600);text-align:right" id="c3-head-cur">現在</th>
+                <th style="padding:8px 6px;background:#eff6ff;font-weight:800;color:#1d4ed8;text-align:right">製品A</th>
+                <th style="padding:8px 6px;background:#f0fdf4;font-weight:800;color:#15803d;text-align:right;border-radius:0 6px 6px 0">製品B</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom:1px solid var(--gray-100)">
+                <td style="padding:8px 6px;color:var(--gray-500);font-weight:600">年間コスト</td>
+                <td style="padding:8px 6px;text-align:right;color:var(--gray-700);font-weight:700" id="c3-cur-cost">—</td>
+                <td style="padding:8px 6px;text-align:right;color:#2563eb;font-weight:800" id="c3-a-cost">—</td>
+                <td style="padding:8px 6px;text-align:right;color:#16a34a;font-weight:800" id="c3-b-cost">—</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--gray-100)">
+                <td style="padding:8px 6px;color:var(--gray-500);font-weight:600">年間節約額</td>
+                <td style="padding:8px 6px;text-align:right;color:var(--gray-400)">—</td>
+                <td style="padding:8px 6px;text-align:right;color:#2563eb;font-weight:800" id="c3-a-save">—</td>
+                <td style="padding:8px 6px;text-align:right;color:#16a34a;font-weight:800" id="c3-b-save">—</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--gray-100)">
+                <td style="padding:8px 6px;color:var(--gray-500);font-weight:600">10年節約額</td>
+                <td style="padding:8px 6px;text-align:right;color:var(--gray-400)">—</td>
+                <td style="padding:8px 6px;text-align:right;color:#2563eb;font-weight:700" id="c3-a-10y">—</td>
+                <td style="padding:8px 6px;text-align:right;color:#16a34a;font-weight:700" id="c3-b-10y">—</td>
+              </tr>
+              <tr>
+                <td style="padding:8px 6px;color:var(--gray-500);font-weight:600">回収期間</td>
+                <td style="padding:8px 6px;text-align:right;color:var(--gray-400)">—</td>
+                <td style="padding:8px 6px;text-align:right;color:#2563eb;font-weight:700" id="c3-a-payback">—</td>
+                <td style="padding:8px 6px;text-align:right;color:#16a34a;font-weight:700" id="c3-b-payback">—</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -1181,7 +1362,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',system-ui,sans-serif;backg
 </div>
 
 <script>
-const WATER_RATE = 0.24;
+const WATER_RATE = 0.2725;
 const DB_KEY = 'energy-consult-db-v1';
 
 /* ═══════════ TV省エネデータ ═══════════ */
@@ -1268,7 +1449,8 @@ const TV_DB = [
   {maker:'ハイセンス',model:'32A40K', name:'A40K 32型',               size:32,type:'液晶',    year:2023,kwh:46, price:22000},
 ];
 /* ═══════════ 洗濯機省エネデータ ═══════════ */
-const WASHER_WATER_RATE = 0.2725; // 円/L
+const WASHER_WATER_RATE = 0.2725; // 円/L（初期値・後でwaterRate()で上書き）
+function waterRate(){ return parseFloat(document.getElementById('waterRate')&&document.getElementById('waterRate').value)||0.2725; }
 // 基準データ（1回あたり Wh・L）
 const WASHER_BASE = {
   vertical:{ // 縦型
@@ -1430,6 +1612,7 @@ const CFG = {
   },
   washer:{
     name:'洗濯機',ico:'👕',
+    homeIco:'<svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="4" width="44" height="44" rx="6" fill="#f0f9ff" stroke="#0284c7" stroke-width="2"/><rect x="4" y="4" width="44" height="12" rx="6" fill="#bae6fd" stroke="#0284c7" stroke-width="2"/><circle cx="38" cy="10" r="2.5" fill="#0284c7"/><circle cx="44" cy="10" r="2.5" fill="#0284c7"/><rect x="8" y="7" width="16" height="4" rx="2" fill="#7dd3fc"/><circle cx="26" cy="31" r="13" fill="#e0f2fe" stroke="#0284c7" stroke-width="2"/><circle cx="26" cy="31" r="9" fill="#fff" stroke="#7dd3fc" stroke-width="1.5"/><circle cx="26" cy="31" r="4" fill="#bae6fd" stroke="#0284c7" stroke-width="1"/><rect x="8" y="44" width="8" height="3" rx="1.5" fill="#7dd3fc"/><rect x="36" y="44" width="8" height="3" rx="1.5" fill="#7dd3fc"/></svg>',
     cp:[
       {l:'旧型縦型（10年以上前）',v:{ww:820,dw:0}},
       {l:'標準縦型（5〜9年前）',v:{ww:620,dw:0}},
@@ -1522,6 +1705,7 @@ const CFG = {
   },
   microwave:{
     name:'電子レンジ',ico:'♨️',
+    homeIco:'<svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="11" width="48" height="30" rx="5" fill="#fef3c7" stroke="#d97706" stroke-width="2"/><rect x="4" y="13" width="32" height="26" rx="4" fill="#fff8e1" stroke="#f59e0b" stroke-width="1.5"/><rect x="6" y="15" width="28" height="22" rx="3" fill="#fde68a" stroke="#f59e0b" stroke-width="1"/><path d="M12 24 Q16 20 20 24 Q24 28 28 24" stroke="#f97316" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M12 30 Q16 26 20 30 Q24 34 28 30" stroke="#f97316" stroke-width="1" fill="none" stroke-linecap="round" opacity="0.5"/><rect x="38" y="15" width="9" height="4" rx="2" fill="#f59e0b"/><rect x="38" y="23" width="9" height="4" rx="2" fill="#f59e0b"/><rect x="38" y="31" width="9" height="4" rx="2" fill="#f59e0b"/><circle cx="42" cy="39" r="2" fill="#4ade80"/></svg>',
     cp:[
       {l:'旧型（15年以上前）',v:{w:1300,sw:5}},
       {l:'標準グリル付き',v:{w:1000,sw:3}},
@@ -1731,6 +1915,8 @@ function buildTabs(){
 
 function sel(k){
   cur=k;
+  // カテゴリ変更時：ユーザー入力価格フラグをリセット
+  const _pn=$('p-n'); if(_pn){ _pn.value=''; delete _pn.dataset.userSet; }
   $('sel-category').value = k;
   $('cur-category-chip').textContent = `カテゴリ: ${CFG[k].ico} ${CFG[k].name}`;
   renderForms();
@@ -1767,15 +1953,11 @@ function buildCategoryHome(){
   grid.innerHTML='';
   Object.entries(CFG).forEach(([k,v])=>{
     const b=document.createElement('button');
-    // Safari互換：SVGをinnerHTMLに入れない。絵文字で代替
-    b.style.cssText='border:2px solid #e2e8f0;background:#fff;border-radius:16px;padding:18px 10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;font-weight:700;font-size:.9rem;color:#334155;min-height:100px;width:100%;box-sizing:border-box;-webkit-tap-highlight-color:transparent';
-    const ico=document.createElement('span');
-    ico.style.cssText='font-size:2.6rem;line-height:1;display:block';
-    ico.textContent=v.ico;
-    const nm=document.createElement('span');
-    nm.textContent=v.name;
-    b.appendChild(ico);
-    b.appendChild(nm);
+    b.className='cat-btn';
+    const icoHtml = v.homeIco
+      ? `<div style="width:52px;height:52px;flex-shrink:0">${v.homeIco}</div>`
+      : `<span style="font-size:2.6rem;line-height:1">${v.ico}</span>`;
+    b.innerHTML=`${icoHtml}<span>${v.name}</span>`;
     b.addEventListener('click',()=>openCategoryPage(k));
     grid.appendChild(b);
   });
@@ -2120,7 +2302,7 @@ function acSyncUnderlyingForms(tatami, cK, nK){
   if(n_ck) n_ck.value = Math.max(0, Math.round(y*10)/10);
   if(n_hk) n_hk.value = Math.max(0, Math.round(y*10)/10);
   const p = el('p-n');
-  if(p) p.value = AC_REF_PRICE[t] || 150000;
+  if(p && !p.dataset.userSet) p.value = AC_REF_PRICE[t] || 150000;
 }
 
 function acCurrentAnnual(){
@@ -2378,7 +2560,7 @@ function washerCalcAnnual(perWash,freq){
   const unit=up(), times=freq*52;
   const elecKwh=(perWash.wh/1000)*times;
   const elecCost=elecKwh*unit;
-  const waterCostVal=perWash.l*times*WASHER_WATER_RATE;
+  const waterCostVal=perWash.l*times*waterRate();
   return {elecKwh,elecCost,waterCost:waterCostVal,total:elecCost+waterCostVal,timesPerYear:times};
 }
 function washerCurrentAnnual(){
@@ -2409,7 +2591,7 @@ function washerCalcAndFill(){
   const type = (washerSt.mode==='detail'&&washerSt.dModel)?washerSt.dModel.type:washerSt.type;
   const typeKey=washerTypeKey(type);
   const p=$('p-n');
-  if(p) p.value=(WASHER_REF_PRICE[typeKey]||{})[cap]||118000;
+  if(p && !p.dataset.userSet) p.value=(WASHER_REF_PRICE[typeKey]||{})[cap]||118000;
 }
 
 function washerRenderViz(curA,newA,cap,type,era,freq){
@@ -2639,7 +2821,7 @@ function fridgeCalcAndFill(){
   if(fridgeSt.mode==='detail' && !fridgeSt.dModel) return;
   const cap = (fridgeSt.mode==='detail' && fridgeSt.dModel) ? fridgeSt.dModel.cap : fridgeSt.cap;
   const p = $('p-n');
-  if(p) p.value = FRIDGE_REF_PRICE[cap] || 110000;
+  if(p && !p.dataset.userSet) p.value = FRIDGE_REF_PRICE[cap] || 110000;
 }
 
 function fridgeRenderViz(cK, nK, cap, era){
@@ -2995,10 +3177,17 @@ function microwaveCalcAndFill(){
     </div>
     <div class="mw-msg">${msgs.join('　')}</div>`;
 
-  // メインパネル更新（省エネ新機種との比較）
-  const newKwh = mwNewKwh();
+  // メインパネル更新（新製品入力があれば優先）
+  let newKwh;
+  if(catKwhMap.microwave){
+    const newW = parseFloat(catKwhMap.microwave)||0;
+    newKwh = (newW * microwaveSt.microwave.minutes/60 * microwaveSt.microwave.freq * 52 / 1000)
+           + (microwaveSt.oven.freq>0 ? mwOvenKwh()*0.7 : 0);
+  } else {
+    newKwh = mwNewKwh();
+  }
   const newCost = newKwh * unit;
-  updateMainPanel(totalCost, newCost, '現在の年間電気代', '省エネ新機種の年間電気代', '年間節約額（電気代）');
+  updateMainPanel(totalCost, newCost, '現在の年間電気代', '新製品の年間電気代', '年間節約額（電気代）');
 }
 
 // ── 右パネルViz ────────────────────────────────────
@@ -3212,10 +3401,15 @@ function rcCalcAndFill(){
     </div>
     <div class="rc-hint">${msg}</div>`;
 
-  // メインパネル更新
-  const new_ = rcNewBreakdown();
-  const newCost = new_.totalKwh * unit;
-  updateMainPanel(totalCost, newCost, '現在の年間電気代', '最新機種の年間電気代', '年間節約額（炊飯器）');
+  // メインパネル更新（新製品入力があれば優先）
+  let newCostRC;
+  if(catKwhMap.ricecooker){
+    const newWh = parseFloat(catKwhMap.ricecooker)||0;
+    newCostRC = (newWh * ricecookerSt.freq * 52 / 1000) * unit;
+  } else {
+    newCostRC = rcNewBreakdown().totalKwh * unit;
+  }
+  updateMainPanel(totalCost, newCostRC, '現在の年間電気代', '新製品の年間電気代', '年間節約額（炊飯器）');
 }
 
 function rcRenderViz(){
@@ -3446,6 +3640,11 @@ function lightCalcAndFill(){
         </div>
       </div>`;
   }
+  // メインパネル更新（新製品入力があれば優先）
+  const newWLight = catKwhMap.light ? parseFloat(catKwhMap.light) : LIGHT_LED_W;
+  const nKwh = (newWLight/1000)*lightSt.hours*365*lightSt.rooms;
+  const nCost = nKwh * unit;
+  updateMainPanel(cCost, nCost, '現在の年間電気代', '新製品の年間電気代', '年間節約額（照明）');
 }
 
 // ── 右パネルViz ────────────────────────────────────
@@ -3635,8 +3834,11 @@ function bidetCalcAndFill(){
       <span style="font-size:1.1rem;font-weight:900;color:#059669">年間 ¥${fmt(saveBest)} 節約（-${pctBest}%）</span>
     </div>`;
 
-  // メインパネル更新
-  updateMainPanel(cCost, bestCost, '現在の年間電気代', '最新省エネ機種の年間電気代', '年間節約額（温水便座）');
+  // メインパネル更新（新製品入力があれば優先）
+  const newCostBD = catKwhMap.bidet
+    ? parseFloat(catKwhMap.bidet) * unit
+    : bestCost;
+  updateMainPanel(cCost, newCostBD, '現在の年間電気代', '新製品の年間電気代', '年間節約額（温水便座）');
 }
 
 // ── 右パネルViz ────────────────────────────────────
@@ -3823,9 +4025,11 @@ function printerCalcAndFill(){
       <div style="font-size:.7rem;color:#b45309;margin-top:2px">月${pages}枚印刷の場合</div>
     </div>`}`;
 
-  // メインパネル更新（印刷コスト）
-  updateMainPanel(yCost, isEco ? yCost : ecoYCost,
-    '現在の年間印刷コスト', 'エコタンクの年間印刷コスト', '年間印刷コスト節約額');
+  // メインパネル更新（印刷コスト：新製品入力があれば優先）
+  const newCppVal = printerNewCpp !== null ? printerNewCpp : (isEco ? cpp : ecoCpp);
+  const newYCost = newCppVal * pages * 12;
+  updateMainPanel(yCost, newYCost,
+    '現在の年間印刷コスト', '買い替え後の年間印刷コスト', '年間印刷コスト節約額');
 }
 
 // ── 右パネルViz ─────────────────────────────────────
@@ -3931,12 +4135,12 @@ function waterCost(c, usage){
   if(cur==='washer'){
     const n=(usage.wpw||0)*52;
     const litersPerWash=c.wl||95;
-    return litersPerWash*n*WATER_RATE;
+    return litersPerWash*n*waterRate();
   }
   if(cur==='bidet'){
     const persons=Math.max(1,usage.up||3);
     const litersPerPersonPerDay=12;
-    return litersPerPersonPerDay*persons*365*WATER_RATE;
+    return litersPerPersonPerDay*persons*365*waterRate();
   }
   return 0;
 }
@@ -3958,6 +4162,12 @@ function calc(){
   if(cur==='light') lightCalcAndFill();
   if(cur==='bidet') bidetCalcAndFill();
   if(cur==='printer') printerCalcAndFill();
+
+  // 毎回リセット：水道代内訳・ラベル
+  const _wbd=$('washer-water-breakdown'); if(_wbd) _wbd.style.display='none';
+  const _cLbl=$('r-cur-lbl'); if(_cLbl) _cLbl.textContent='現在の年間電気代';
+  const _nLbl=$('r-new-lbl'); if(_nLbl) _nLbl.textContent='買い替え後の年間電気代';
+  const _heroLbl=document.querySelector('.res-hero-lbl'); if(_heroLbl) _heroLbl.textContent='年間の節約額';
 
   const cs=collect(c.cf,'c_');
   const ns=collect(c.nf,'n_');
@@ -4087,6 +4297,22 @@ function calc(){
 
   calcHeatCompare(cs, ns, us, es, price);
   payback(sA);
+
+  // 3機種比較（製品Bが入力されている場合）
+  if(newProductBKwh){
+    let bK = newProductBKwh;
+    let bCost = bK * price;
+    if(cur==='washer'){
+      // 洗濯機は水道代も含む
+      const bTimes = washerSt.freq*52;
+      const bWater = (washerNewWaterL||80) * bTimes * waterRate();
+      bCost = bK * price + bWater;
+    }
+    const aPrice = parseFloat($('p-n')&&$('p-n').value)||0;
+    updateCompare3(cC, nC, bCost, aPrice, newProductBPrice);
+  } else {
+    const panel=$('compare3-panel'); if(panel) panel.style.display='none';
+  }
 }
 
 function payback(sA){
@@ -4119,14 +4345,35 @@ function resetAll(){
     const btn=$('nps-kwh-btn-'+k);
     if(btn){ btn.classList.remove('has-value'); btn.querySelector('.nps-trigger-val').textContent='タップして入力'; }
   });
-  const priceBtn=$('nps-price-btn');
-  if(priceBtn){ priceBtn.classList.remove('has-value'); priceBtn.querySelector('.nps-trigger-val').textContent='タップして入力'; }
+  document.querySelectorAll('[id="nps-price-btn"]').forEach(btn=>{
+    btn.classList.remove('has-value');
+    btn.querySelector('.nps-trigger-val').textContent='タップして入力';
+  });
   // カテゴリ別価格もリセット
   Object.keys(catPriceMap).forEach(k=>{
     catPriceMap[k]='';
     const btn=$('nps-price-btn-'+k);
     if(btn){ btn.classList.remove('has-value'); btn.querySelector('.nps-trigger-val').textContent='タップして入力'; }
   });
+  // カテゴリ別消費電力もリセット
+  Object.keys(catKwhMap).forEach(k=>{
+    catKwhMap[k]='';
+    const btn=$('nps-kwh-btn-'+k);
+    if(btn){ btn.classList.remove('has-value'); btn.querySelector('.nps-trigger-val').textContent='タップして入力'; }
+  });
+  printerNewCpp = null;
+  const cppBtn=$('nps-cpp-btn-printer');
+  if(cppBtn){ cppBtn.classList.remove('has-value'); cppBtn.querySelector('.nps-trigger-val').textContent='タップして入力'; }
+  // 価格userSetフラグもリセット
+  const pnEl=$('p-n'); if(pnEl){ delete pnEl.dataset.userSet; }
+  // 製品Bリセット
+  newProductBKwh=null; newProductBPrice=null;
+  document.querySelectorAll('#nps-kwh-b-btn,#nps-price-b-btn').forEach(btn=>{
+    btn.classList.remove('has-value');
+    btn.querySelector('.nps-trigger-val').textContent='タップして入力';
+  });
+  // 新規購入モードリセット
+  if(newPurchaseMode) toggleNewPurchaseMode();
   // 洗濯機の水使用量もリセット
   washerNewWaterL = null;
   const wBtn=$('nps-water-btn-washer');
@@ -4604,6 +4851,7 @@ function _init(){
 _init();
 
 $('unitPrice').addEventListener('input',calc);
+$('waterRate').addEventListener('input',calc);
 $('p-c').addEventListener('input',calc);
 $('p-n').addEventListener('input',calc);
 $('sel-maker').addEventListener('change',rebuildModelSelect);
@@ -4728,16 +4976,108 @@ function openKwhNumpad(catKey){
 function openPriceNumpad(){
   const sc = (NUMPAD_SHORTCUTS[cur]||{}).price||[];
   const currentPrice = $('p-n') ? $('p-n').value : '';
-  openNumpad('price-input', '新製品の本体価格（プライスカードの価格）', '円',
+  openNumpad('price-input', '製品Aの本体価格（プライスカードの価格）', '円',
     currentPrice, val=>{
-      if($('p-n')) $('p-n').value = val;
-      numpadTriggerUpdate('nps-price-btn', val, '円');
+      const pn=$('p-n'); if(pn){ pn.value=val; pn.dataset.userSet='1'; }
+      // 重複IDをすべて更新（querySelectorAllで全件対象）
+      document.querySelectorAll('[id="nps-price-btn"]').forEach(btn=>{
+        btn.classList.add('has-value');
+        btn.querySelector('.nps-trigger-val').textContent = Number(val).toLocaleString('ja-JP');
+      });
       calc();
     }, sc);
 }
 
 function getSpecialKwh(catKey){
   return specialKwh[catKey] ? parseFloat(specialKwh[catKey]) : null;
+}
+
+/* ═══ 3機種比較 ══════════════════════════════════════ */
+let newProductBKwh  = null; // 製品B kWh
+let newProductBPrice= null; // 製品B 価格
+let newPurchaseMode = false; // 新規購入モード（現在機種なし）
+
+function openKwhBNumpad(){
+  const sc = (NUMPAD_SHORTCUTS[cur]||{}).kwh||[];
+  openNumpad('kwh-b', '製品Bの年間消費電力量', 'kWh/年',
+    newProductBKwh ? String(newProductBKwh) : '', val=>{
+      newProductBKwh = parseFloat(val)||null;
+      document.querySelectorAll('#nps-kwh-b-btn').forEach(btn=>{
+        btn.classList.toggle('has-value', !!newProductBKwh);
+        btn.querySelector('.nps-trigger-val').textContent = newProductBKwh ? Number(newProductBKwh).toLocaleString('ja-JP') : 'タップして入力';
+      });
+      calc();
+    }, sc);
+}
+
+function openPriceBNumpad(){
+  const sc = (NUMPAD_SHORTCUTS[cur]||{}).price||[];
+  openNumpad('price-b', '製品Bの本体価格', '円',
+    newProductBPrice ? String(newProductBPrice) : '', val=>{
+      newProductBPrice = parseFloat(val)||null;
+      document.querySelectorAll('#nps-price-b-btn').forEach(btn=>{
+        btn.classList.toggle('has-value', !!newProductBPrice);
+        btn.querySelector('.nps-trigger-val').textContent = newProductBPrice ? Number(newProductBPrice).toLocaleString('ja-JP') : 'タップして入力';
+      });
+      calc();
+    }, sc);
+}
+
+function toggleNewPurchaseMode(){
+  newPurchaseMode = !newPurchaseMode;
+  // 現在機種入力エリアを表示/非表示
+  const curCards = ['ac-card','fridge-card','washer-card','tv-card'];
+  curCards.forEach(id=>{
+    const card=$(id);
+    if(!card || card.style.display==='none') return;
+    // 現在機種の選択ボタン群を非表示/表示
+    const labels = card.querySelectorAll('.tv-slabel:first-of-type, .ac-tat, .sg, .fridge-cap-grid, .washer-cap-row, .washer-type-grid, .fridge-warn, .ac-hint');
+    labels.forEach(el=>{
+      if(!el.closest('.new-product-section')) el.style.opacity = newPurchaseMode ? '0.3' : '1';
+    });
+    // c3ヘッダーの「現在」列
+    const c3head=$('c3-head-cur');
+    if(c3head) c3head.textContent = newPurchaseMode ? '—' : '現在';
+  });
+  // ボタンテキスト更新
+  document.querySelectorAll('[onclick="toggleNewPurchaseMode()"]').forEach(btn=>{
+    btn.style.background = newPurchaseMode ? 'var(--blue-l)' : 'var(--gray-50)';
+    btn.style.borderColor = newPurchaseMode ? 'var(--blue)' : 'var(--gray-200)';
+    btn.style.color = newPurchaseMode ? 'var(--blue)' : 'var(--gray-600)';
+    btn.textContent = newPurchaseMode ? '✅ 新規購入モード' : '新規購入モード';
+  });
+  calc();
+}
+
+function updateCompare3(curCost, aCost, bCost, aPrice, bPrice){
+  const panel=$('compare3-panel');
+  if(!panel) return;
+  const hasB = bCost !== null && bCost !== undefined;
+  panel.style.display = hasB ? '' : 'none';
+  if(!hasB) return;
+
+  const aSave = newPurchaseMode ? null : curCost - aCost;
+  const bSave = newPurchaseMode ? null : curCost - bCost;
+
+  const se = v => v !== null && v !== undefined ? '¥'+fmt(v) : '—';
+  $('c3-cur-cost').textContent = newPurchaseMode ? '—' : se(curCost);
+  $('c3-a-cost').textContent = se(aCost);
+  $('c3-b-cost').textContent = se(bCost);
+  $('c3-a-save').textContent = aSave !== null ? (aSave>0?'+':'') + se(aSave) : '—';
+  $('c3-b-save').textContent = bSave !== null ? (bSave>0?'+':'') + se(bSave) : '—';
+  $('c3-a-10y').textContent = aSave!==null && aSave>0 ? se(aSave*10) : '—';
+  $('c3-b-10y').textContent = bSave!==null && bSave>0 ? se(bSave*10) : '—';
+
+  // 回収期間
+  const paybackStr = (save, price) => {
+    if(!price || save<=0) return '—';
+    const y = price/save;
+    if(y>30) return '30年超';
+    const yr=Math.floor(y), mo=Math.round((y-yr)*12);
+    return yr>0 ? yr+'年'+mo+'ヶ月' : mo+'ヶ月';
+  };
+  $('c3-a-payback').textContent = paybackStr(aSave, aPrice);
+  $('c3-b-payback').textContent = paybackStr(bSave, bPrice);
 }
 
 /* 洗濯機：新製品の使用水量入力 */
@@ -4752,8 +5092,57 @@ function openWaterNumpad(){
     }, [70, 80, 95, 110]);
 }
 
+/* カテゴリ別消費電力入力（各専用カテゴリ用）*/
+const catKwhMap = {microwave:'', ricecooker:'', bidet:'', light:'', printer:''};
+
+const CAT_KWH_SHORTCUTS = {
+  microwave:  [500, 700, 800, 1000],
+  ricecooker: [100, 120, 140, 165],
+  bidet:      [80,  100, 120, 150],
+  light:      [6,   8,   10,  14],
+  printer:    [],
+};
+const CAT_KWH_UNITS = {
+  microwave:  'W',
+  ricecooker: 'Wh/回',
+  bidet:      'kWh/年',
+  light:      'W/台',
+  printer:    '',
+};
+
+function openCatKwhNumpad(cat){
+  const unit = CAT_KWH_UNITS[cat]||'W';
+  const sc   = CAT_KWH_SHORTCUTS[cat]||[];
+  openNumpad('cat-kwh-'+cat, '新製品の消費電力（プライスカードの数字）', unit,
+    catKwhMap[cat], val=>{
+      catKwhMap[cat] = val;
+      const btn=$('nps-kwh-btn-'+cat);
+      if(btn){
+        btn.classList.add('has-value');
+        btn.querySelector('.nps-trigger-val').textContent = Number(val).toLocaleString('ja-JP');
+      }
+      if(cur===cat) calc();
+    }, sc);
+}
+
+/* プリンター専用：印刷コスト入力 */
+let printerNewCpp = null;
+
+function openPrinterCppNumpad(){
+  openNumpad('printer-cpp', '買い替え候補の印刷コスト（円/枚）', '円/枚',
+    printerNewCpp ? String(printerNewCpp) : '', val=>{
+      printerNewCpp = parseFloat(val)||null;
+      const btn=$('nps-cpp-btn-printer');
+      if(btn){
+        btn.classList.add('has-value');
+        btn.querySelector('.nps-trigger-val').textContent = val;
+      }
+      if(cur==='printer') calc();
+    }, [1, 2, 3, 5, 8, 12]);
+}
+
 /* カテゴリ別価格入力（microwave/ricecooker/bidet/printer用）*/
-const catPriceMap = {microwave:'',ricecooker:'',bidet:'',printer:''};
+const catPriceMap = {microwave:'',ricecooker:'',bidet:'',printer:'',light:''};
 
 function openCatPriceNumpad(cat){
   const sc = (NUMPAD_SHORTCUTS[cat]||{}).price||[];
