@@ -24,8 +24,9 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',system-ui,sans-serif;backg
 .hd-sub{font-size:.8rem;opacity:.8;margin-top:3px}
 .unit-box{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.15);backdrop-filter:blur(4px);border-radius:12px;padding:10px 16px}
 .unit-box label{font-size:.8rem;white-space:nowrap;opacity:.9}
-.unit-box input{width:72px;border:2px solid rgba(255,255,255,.5);border-radius:8px;background:rgba(255,255,255,.92);color:var(--gray-900);padding:6px 8px;font-size:1rem;font-weight:700;text-align:right;-moz-appearance:textfield;appearance:textfield}
-.unit-box input::-webkit-inner-spin-button{-webkit-appearance:none}
+.unit-box input{display:none}
+.unit-val-btn{min-width:72px;border:2px solid rgba(255,255,255,.5);border-radius:8px;background:rgba(255,255,255,.92);color:var(--gray-900);padding:6px 10px;font-size:1rem;font-weight:700;text-align:center;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:.15s;min-height:38px;white-space:nowrap}
+.unit-val-btn:hover,.unit-val-btn:active{background:#dbeafe;border-color:var(--blue-m)}
 .unit-box span{font-size:.8rem;white-space:nowrap;opacity:.9}
 
 /* ─── Tabs ─── */
@@ -592,6 +593,19 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',system-ui,sans-serif;backg
 .res-cmp-sub{font-size:.72rem;color:var(--gray-400);margin-top:4px}
 .res-cmp-arrow{font-size:1.4rem;color:var(--green);font-weight:800;text-align:center}
 
+/* ─── UI改善：ステップ表示・製品B折りたたみ ─── */
+.step-header{display:flex;align-items:center;gap:8px;margin-bottom:10px;margin-top:4px}
+.step-badge{background:var(--blue);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:900;flex-shrink:0}
+.step-badge.green{background:var(--green)}
+.step-title{font-size:.88rem;font-weight:800;color:var(--gray-700)}
+.step-hint{font-size:.7rem;color:var(--gray-400);margin-top:1px}
+.add-compare-btn{width:100%;padding:12px;border:2px dashed var(--gray-200);border-radius:10px;background:var(--gray-50);color:var(--gray-400);font-size:.82rem;font-weight:700;cursor:pointer;touch-action:manipulation;display:flex;align-items:center;justify-content:center;gap:6px;margin-top:8px;transition:.15s}
+.add-compare-btn:hover{border-color:var(--green-m);color:var(--green);background:var(--green-l)}
+.add-compare-btn.active{border-color:var(--green);background:var(--green-l);color:var(--green)}
+.product-b-panel{display:none;margin-top:10px;padding-top:10px;border-top:2px dashed var(--green-l)}
+.product-b-panel.open{display:block}
+.nps-field label{font-size:.75rem;font-weight:700;color:var(--gray-500)}
+
 /* ─── iPad横向き2カラムレイアウト ─── */
 @media(min-width:768px){
   .wrap{grid-template-columns:1fr 420px}
@@ -661,11 +675,13 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',system-ui,sans-serif;backg
     <div class="unit-box">
       <label>電力単価</label>
       <input type="number" id="unitPrice" value="31" min="1" max="100" step="0.5">
+      <button class="unit-val-btn" id="unit-price-disp" onclick="openUnitPriceNumpad()">31</button>
       <span>円／kWh</span>
     </div>
     <div class="unit-box">
       <label>水道単価</label>
       <input type="number" id="waterRate" value="0.2725" min="0.1" max="1" step="0.0025">
+      <button class="unit-val-btn" id="water-rate-disp" onclick="openWaterRateNumpad()">0.27</button>
       <span>円／L</span>
     </div>
     <button class="btn btn-r" id="admin-toggle" title="2秒長押しで管理者画面へ" style="display:none">🔐</button>
@@ -718,65 +734,21 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',system-ui,sans-serif;backg
             </button>
           </div>
           <div class="nps-field">
-            <label>本体価格</label>
+            <label>本体価格（任意）</label>
             <button class="nps-trigger" id="nps-price-btn" onclick="openPriceNumpad()">
               <span class="nps-trigger-val">タップして入力</span>
               <span class="nps-trigger-unit">円</span>
             </button>
           </div>
         </div>
-        <div style="font-size:.72rem;font-weight:800;color:#16a34a;margin:10px 0 6px">製品B（比較用）</div>
-        <div class="nps-grid">
-          <div class="nps-field">
-            <label>年間消費電力量</label>
-            <button class="nps-trigger" id="nps-kwh-b-btn" onclick="openKwhBNumpad()">
-              <span class="nps-trigger-val">タップして入力</span>
-              <span class="nps-trigger-unit">kWh/年</span>
-            </button>
+        <button class="add-compare-btn" id="add-compare-btn" onclick="toggleProductBPanel()">
+          <span>＋ 別の機種と比較する</span>
+        </button>
+        <div class="product-b-panel" id="product-b-panel">
+          <div class="step-header">
+            <div class="step-badge green">B</div>
+            <div><div class="step-title">比較機種（製品B）</div><div class="step-hint">2機種を並べて比較できます</div></div>
           </div>
-          <div class="nps-field">
-            <label>本体価格</label>
-            <button class="nps-trigger" id="nps-price-b-btn" onclick="openPriceBNumpad()">
-              <span class="nps-trigger-val">タップして入力</span>
-              <span class="nps-trigger-unit">円</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- エアコン専用診断カード -->
-    <div class="card" id="ac-card" style="display:none">
-      <div class="ct"><span class="ci">🧊</span>エアコン省エネ診断</div>
-      <div class="tv-slabel">現在のエアコン ― お部屋の広さ（畳数）</div>
-      <div class="ac-tat" id="ac-tatami-btns"></div>
-      <div class="tv-slabel">使用年数（おおよそ）</div>
-      <div class="sg" id="ac-era-btns"></div>
-      <p class="ac-hint">※冷房8時間/日・90日、暖房7時間/日・90日の概算です。</p>
-      <div class="new-product-section">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-          <div class="nps-title" style="margin-bottom:0">✨ 新製品情報（プライスカードを見て入力）</div>
-          <button onclick="toggleNewPurchaseMode()" id="new-purchase-btn-aircon" style="font-size:.72rem;padding:6px 10px;border-radius:20px;border:2px solid var(--gray-200);background:var(--gray-50);color:var(--gray-600);cursor:pointer;white-space:nowrap;touch-action:manipulation">新規購入モード</button>
-        </div>
-        <div style="font-size:.72rem;font-weight:800;color:#2563eb;margin-bottom:6px">製品A</div>
-        <div class="nps-grid">
-          <div class="nps-field">
-            <label>年間消費電力量</label>
-            <button class="nps-trigger" id="nps-kwh-btn-aircon" onclick="openKwhNumpad('aircon')">
-              <span class="nps-trigger-val">タップして入力</span>
-              <span class="nps-trigger-unit">kWh/年</span>
-            </button>
-          </div>
-          <div class="nps-field">
-            <label>本体価格</label>
-            <button class="nps-trigger" id="nps-price-btn" onclick="openPriceNumpad()">
-              <span class="nps-trigger-val">タップして入力</span>
-              <span class="nps-trigger-unit">円</span>
-            </button>
-          </div>
-        </div>
-        <div id="product-b-section-aircon">
-          <div style="font-size:.72rem;font-weight:800;color:#16a34a;margin:10px 0 6px">製品B（比較用）</div>
           <div class="nps-grid">
             <div class="nps-field">
               <label>年間消費電力量</label>
@@ -786,7 +758,74 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',system-ui,sans-serif;backg
               </button>
             </div>
             <div class="nps-field">
-              <label>本体価格</label>
+              <label>本体価格（任意）</label>
+              <button class="nps-trigger" id="nps-price-b-btn" onclick="openPriceBNumpad()">
+                <span class="nps-trigger-val">タップして入力</span>
+                <span class="nps-trigger-unit">円</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- エアコン専用診断カード -->
+    <div class="card" id="ac-card" style="display:none">
+      <div class="ct"><span class="ci">🧊</span>エアコン省エネ診断</div>
+
+      <div class="step-header">
+        <div class="step-badge">1</div>
+        <div><div class="step-title" id="ac-cur-label">現在お使いのエアコン</div><div class="step-hint">お客様に確認してください</div></div>
+        <button onclick="toggleNewPurchaseMode()" id="new-purchase-btn-aircon" style="margin-left:auto;font-size:.7rem;padding:5px 10px;border-radius:20px;border:2px solid var(--gray-200);background:var(--gray-50);color:var(--gray-500);cursor:pointer;white-space:nowrap;touch-action:manipulation">新規購入</button>
+      </div>
+      <div id="ac-cur-section">
+        <div class="tv-slabel">お部屋の広さ（畳数）</div>
+        <div class="ac-tat" id="ac-tatami-btns"></div>
+        <div class="tv-slabel">いつ頃お買いになりましたか？</div>
+        <div class="sg" id="ac-era-btns"></div>
+        <p class="ac-hint">※冷房8時間/日・90日、暖房7時間/日・90日の概算です。</p>
+      </div>
+
+      <div class="new-product-section">
+        <div class="step-header">
+          <div class="step-badge">2</div>
+          <div><div class="step-title">買い替え候補（製品A）</div><div class="step-hint">プライスカードの数字を入力</div></div>
+        </div>
+        <div class="nps-grid">
+          <div class="nps-field">
+            <label>省エネ性能（年間消費電力量）</label>
+            <button class="nps-trigger" id="nps-kwh-btn-aircon" onclick="openKwhNumpad('aircon')">
+              <span class="nps-trigger-val">タップして入力</span>
+              <span class="nps-trigger-unit">kWh/年</span>
+            </button>
+          </div>
+          <div class="nps-field">
+            <label>本体価格（任意）</label>
+            <button class="nps-trigger" id="nps-price-btn" onclick="openPriceNumpad()">
+              <span class="nps-trigger-val">タップして入力</span>
+              <span class="nps-trigger-unit">円</span>
+            </button>
+          </div>
+        </div>
+
+        <button class="add-compare-btn" id="add-compare-btn" onclick="toggleProductBPanel()">
+          <span>＋ 別の機種と比較する</span>
+        </button>
+        <div class="product-b-panel" id="product-b-panel">
+          <div class="step-header">
+            <div class="step-badge green">B</div>
+            <div><div class="step-title">比較機種（製品B）</div><div class="step-hint">2機種を並べて比較できます</div></div>
+          </div>
+          <div class="nps-grid">
+            <div class="nps-field">
+              <label>省エネ性能（年間消費電力量）</label>
+              <button class="nps-trigger" id="nps-kwh-b-btn" onclick="openKwhBNumpad()">
+                <span class="nps-trigger-val">タップして入力</span>
+                <span class="nps-trigger-unit">kWh/年</span>
+              </button>
+            </div>
+            <div class="nps-field">
+              <label>本体価格（任意）</label>
               <button class="nps-trigger" id="nps-price-b-btn" onclick="openPriceBNumpad()">
                 <span class="nps-trigger-val">タップして入力</span>
                 <span class="nps-trigger-unit">円</span>
@@ -820,28 +859,36 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',system-ui,sans-serif;backg
             </button>
           </div>
           <div class="nps-field">
-            <label>本体価格</label>
+            <label>本体価格（任意）</label>
             <button class="nps-trigger" id="nps-price-btn" onclick="openPriceNumpad()">
               <span class="nps-trigger-val">タップして入力</span>
               <span class="nps-trigger-unit">円</span>
             </button>
           </div>
         </div>
-        <div style="font-size:.72rem;font-weight:800;color:#16a34a;margin:10px 0 6px">製品B（比較用）</div>
-        <div class="nps-grid">
-          <div class="nps-field">
-            <label>年間消費電力量</label>
-            <button class="nps-trigger" id="nps-kwh-b-btn" onclick="openKwhBNumpad()">
-              <span class="nps-trigger-val">タップして入力</span>
-              <span class="nps-trigger-unit">kWh/年</span>
-            </button>
+        <button class="add-compare-btn" id="add-compare-btn" onclick="toggleProductBPanel()">
+          <span>＋ 別の機種と比較する</span>
+        </button>
+        <div class="product-b-panel" id="product-b-panel">
+          <div class="step-header">
+            <div class="step-badge green">B</div>
+            <div><div class="step-title">比較機種（製品B）</div><div class="step-hint">2機種を並べて比較できます</div></div>
           </div>
-          <div class="nps-field">
-            <label>本体価格</label>
-            <button class="nps-trigger" id="nps-price-b-btn" onclick="openPriceBNumpad()">
-              <span class="nps-trigger-val">タップして入力</span>
-              <span class="nps-trigger-unit">円</span>
-            </button>
+          <div class="nps-grid">
+            <div class="nps-field">
+              <label>年間消費電力量</label>
+              <button class="nps-trigger" id="nps-kwh-b-btn" onclick="openKwhBNumpad()">
+                <span class="nps-trigger-val">タップして入力</span>
+                <span class="nps-trigger-unit">kWh/年</span>
+              </button>
+            </div>
+            <div class="nps-field">
+              <label>本体価格（任意）</label>
+              <button class="nps-trigger" id="nps-price-b-btn" onclick="openPriceBNumpad()">
+                <span class="nps-trigger-val">タップして入力</span>
+                <span class="nps-trigger-unit">円</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -880,7 +927,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',system-ui,sans-serif;backg
             </button>
           </div>
           <div class="nps-field" style="grid-column:1/-1">
-            <label>本体価格</label>
+            <label>本体価格（任意）</label>
             <button class="nps-trigger" id="nps-price-btn" onclick="openPriceNumpad()">
               <span class="nps-trigger-val">タップして入力</span>
               <span class="nps-trigger-unit">円</span>
@@ -888,21 +935,29 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',system-ui,sans-serif;backg
           </div>
         </div>
         <p class="ac-hint" style="margin-top:8px">💧 水使用量はプライスカードの「標準使用水量」欄の数字を入力</p>
-        <div style="font-size:.72rem;font-weight:800;color:#16a34a;margin:10px 0 6px">製品B（比較用）</div>
-        <div class="nps-grid">
-          <div class="nps-field">
-            <label>年間消費電力量</label>
-            <button class="nps-trigger" id="nps-kwh-b-btn" onclick="openKwhBNumpad()">
-              <span class="nps-trigger-val">タップして入力</span>
-              <span class="nps-trigger-unit">kWh/年</span>
-            </button>
+        <button class="add-compare-btn" id="add-compare-btn" onclick="toggleProductBPanel()">
+          <span>＋ 別の機種と比較する</span>
+        </button>
+        <div class="product-b-panel" id="product-b-panel">
+          <div class="step-header">
+            <div class="step-badge green">B</div>
+            <div><div class="step-title">比較機種（製品B）</div><div class="step-hint">2機種を並べて比較できます</div></div>
           </div>
-          <div class="nps-field">
-            <label>本体価格</label>
-            <button class="nps-trigger" id="nps-price-b-btn" onclick="openPriceBNumpad()">
-              <span class="nps-trigger-val">タップして入力</span>
-              <span class="nps-trigger-unit">円</span>
-            </button>
+          <div class="nps-grid">
+            <div class="nps-field">
+              <label>年間消費電力量</label>
+              <button class="nps-trigger" id="nps-kwh-b-btn" onclick="openKwhBNumpad()">
+                <span class="nps-trigger-val">タップして入力</span>
+                <span class="nps-trigger-unit">kWh/年</span>
+              </button>
+            </div>
+            <div class="nps-field">
+              <label>本体価格（任意）</label>
+              <button class="nps-trigger" id="nps-price-b-btn" onclick="openPriceBNumpad()">
+                <span class="nps-trigger-val">タップして入力</span>
+                <span class="nps-trigger-unit">円</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -923,12 +978,18 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',system-ui,sans-serif;backg
           <div class="mw-sg" id="mw-mw-watt-btns"></div>
         </div>
         <div class="mw-panel p-ov">
-          <div class="mw-panel-ttl">🔥 オーブン調理</div>
-          <div class="tv-slabel">使用回数（週）</div>
-          <div class="mw-sg" id="mw-ov-freq-btns"></div>
-          <div class="tv-slabel">調理タイプ（1回あたりの時間）</div>
-          <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:8px" id="mw-ov-preset-btns"></div>
-          <div class="ac-hint" style="margin-top:4px;font-size:.68rem;padding:6px 8px">🔌 消費電力：1300W固定（庫内加熱）</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+            <div class="mw-panel-ttl" style="margin-bottom:0">🔥 オーブン調理</div>
+            <button id="oven-toggle-btn" onclick="toggleOvenMode()" style="font-size:.72rem;padding:5px 10px;border-radius:20px;border:2px solid var(--gray-200);background:var(--gray-50);color:var(--gray-600);cursor:pointer;touch-action:manipulation">なし（OFF）</button>
+          </div>
+          <div id="oven-inputs">
+            <div class="tv-slabel">使用回数（週）</div>
+            <div class="mw-sg" id="mw-ov-freq-btns"></div>
+            <div class="tv-slabel">調理タイプ（1回あたりの時間）</div>
+            <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:8px" id="mw-ov-preset-btns"></div>
+            <div class="ac-hint" style="margin-top:4px;font-size:.68rem;padding:6px 8px">🔌 消費電力：1300W固定（庫内加熱）</div>
+          </div>
+          <p class="ac-hint" id="oven-off-msg" style="display:none">オーブン機能なし（電気代の計算から除外）</p>
         </div>
       </div>
       <div class="new-product-section">
@@ -942,7 +1003,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',system-ui,sans-serif;backg
             </button>
           </div>
           <div class="nps-field">
-            <label>本体価格</label>
+            <label>本体価格（任意）</label>
             <button class="nps-trigger" id="nps-price-btn-microwave" onclick="openCatPriceNumpad('microwave')">
               <span class="nps-trigger-val">タップして入力</span>
               <span class="nps-trigger-unit">円</span>
@@ -965,17 +1026,17 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',system-ui,sans-serif;backg
       <div class="tv-slabel" style="margin-top:14px">④ 保温時間（1日あたり）<span style="background:#fed7aa;color:#9a3412;font-size:.62rem;font-weight:800;padding:2px 6px;border-radius:999px;margin-left:5px">電気代に直結！</span></div>
       <div class="sg" id="rc-warm-btns"></div>
       <div class="new-product-section">
-        <div class="nps-title">✨ 新製品情報</div>
+        <div class="nps-title">✨ 買い替え候補（新製品）</div>
         <div class="nps-grid">
           <div class="nps-field">
-            <label>新製品の定格消費電力</label>
+            <label>定格消費電力（Wh/回）</label>
             <button class="nps-trigger" id="nps-kwh-btn-ricecooker" onclick="openCatKwhNumpad('ricecooker')">
               <span class="nps-trigger-val">タップして入力</span>
               <span class="nps-trigger-unit">Wh/回</span>
             </button>
           </div>
           <div class="nps-field">
-            <label>本体価格</label>
+            <label>本体価格（任意）</label>
             <button class="nps-trigger" id="nps-price-btn-ricecooker" onclick="openCatPriceNumpad('ricecooker')">
               <span class="nps-trigger-val">タップして入力</span>
               <span class="nps-trigger-unit">円</span>
@@ -996,17 +1057,12 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',system-ui,sans-serif;backg
       <div class="tv-slabel" style="margin-top:12px">③ 省エネ設定</div>
       <div class="bd-row-btns" id="bd-eco-btns"></div>
       <div class="new-product-section">
-        <div class="nps-title">✨ 新製品情報</div>
-        <div class="nps-grid">
+        <div class="nps-title">✨ 買い替え候補（新製品）</div>
+        <div class="tv-slabel" style="margin-bottom:8px">タイプを選択</div>
+        <div class="bd-type-grid" id="bd-new-type-btns"></div>
+        <div style="margin-top:10px">
           <div class="nps-field">
-            <label>新製品の年間消費電力量</label>
-            <button class="nps-trigger" id="nps-kwh-btn-bidet" onclick="openCatKwhNumpad('bidet')">
-              <span class="nps-trigger-val">タップして入力</span>
-              <span class="nps-trigger-unit">kWh/年</span>
-            </button>
-          </div>
-          <div class="nps-field">
-            <label>本体価格</label>
+            <label>本体価格（任意）</label>
             <button class="nps-trigger" id="nps-price-btn-bidet" onclick="openCatPriceNumpad('bidet')">
               <span class="nps-trigger-val">タップして入力</span>
               <span class="nps-trigger-unit">円</span>
@@ -1037,7 +1093,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',system-ui,sans-serif;backg
             </button>
           </div>
           <div class="nps-field">
-            <label>本体価格</label>
+            <label>本体価格（任意）</label>
             <button class="nps-trigger" id="nps-price-btn-printer" onclick="openCatPriceNumpad('printer')">
               <span class="nps-trigger-val">タップして入力</span>
               <span class="nps-trigger-unit">円</span>
@@ -1068,7 +1124,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',system-ui,sans-serif;backg
             </button>
           </div>
           <div class="nps-field">
-            <label>本体価格（1台）</label>
+            <label>本体価格（1台・任意）</label>
             <button class="nps-trigger" id="nps-price-btn-light" onclick="openCatPriceNumpad('light')">
               <span class="nps-trigger-val">タップして入力</span>
               <span class="nps-trigger-unit">円</span>
@@ -1917,6 +1973,9 @@ function sel(k){
   cur=k;
   // カテゴリ変更時：ユーザー入力価格フラグをリセット
   const _pn=$('p-n'); if(_pn){ _pn.value=''; delete _pn.dataset.userSet; }
+  // カテゴリ変更時：製品B比較パネルをリセット
+  newProductBKwh=null; newProductBPrice=null;
+  closeProductBPanel();
   $('sel-category').value = k;
   $('cur-category-chip').textContent = `カテゴリ: ${CFG[k].ico} ${CFG[k].name}`;
   renderForms();
@@ -3246,6 +3305,8 @@ function toggleMicrowaveCard(){
   const mc=$('microwave-card');
   if(mc) mc.style.display=isMW?'':'none';
   if(isMW){
+    $('card-c').style.display='none';
+    $('card-n').style.display='none';
     $('card-e').style.display='none';
     mwBuildFreqBtns('mw-mw-freq-btns', microwaveSt.microwave, 'freq');
     mwBuildFreqBtns('mw-ov-freq-btns', microwaveSt.oven, 'freq');
@@ -3484,6 +3545,8 @@ function toggleRicecookerCard(){
   const rc=$('ricecooker-card');
   if(rc) rc.style.display=isRC?'':'none';
   if(isRC){
+    $('card-c').style.display='none';
+    $('card-n').style.display='none';
     $('card-e').style.display='none';
     rcBuildFreqButtons();
     rcBuildCapacityButtons();
@@ -3722,6 +3785,8 @@ function toggleLightCard(){
   const lc=$('light-card');
   if(lc) lc.style.display=isL?'':'none';
   if(isL){
+    $('card-c').style.display='none';
+    $('card-n').style.display='none';
     $('card-e').style.display='none';
     ltBuildRoomBtns();
     ltBuildTypeBtns();
@@ -3906,6 +3971,8 @@ function toggleBidetCard(){
   const bc=$('bidet-card');
   if(bc) bc.style.display=isBD?'':'none';
   if(isBD){
+    $('card-c').style.display='none';
+    $('card-n').style.display='none';
     $('card-e').style.display='none';
     bdBuildTypeBtns();
     bdBuildRowBtns('bd-era-btns',
@@ -4337,6 +4404,7 @@ function f1(n){return (Math.round(n*10)/10).toLocaleString('ja-JP');}
 
 function resetAll(){
   $('unitPrice').value=31;
+  const _upd=$('unit-price-disp'); if(_upd) _upd.textContent='31';
   $('p-c').value=0;
   $('p-n').value='';
   // テンキー入力をリセット
@@ -4368,10 +4436,11 @@ function resetAll(){
   const pnEl=$('p-n'); if(pnEl){ delete pnEl.dataset.userSet; }
   // 製品Bリセット
   newProductBKwh=null; newProductBPrice=null;
-  document.querySelectorAll('#nps-kwh-b-btn,#nps-price-b-btn').forEach(btn=>{
+  document.querySelectorAll('[id="nps-kwh-b-btn"],[id="nps-price-b-btn"]').forEach(btn=>{
     btn.classList.remove('has-value');
     btn.querySelector('.nps-trigger-val').textContent='タップして入力';
   });
+  closeProductBPanel();
   // 新規購入モードリセット
   if(newPurchaseMode) toggleNewPurchaseMode();
   // 洗濯機の水使用量もリセット
@@ -4920,8 +4989,12 @@ function numpadKey(k){
   }else if(k==='ok'){
     closeNumpad(true);
     return;
+  }else if(k==='.'){
+    if(numpadState.value.includes('.')) return; // 小数点は1つまで
+    if(numpadState.value==='') numpadState.value='0';
+    numpadState.value += '.';
   }else{
-    if(numpadState.value.length >= 9) return;
+    if(numpadState.value.length >= 10) return;
     numpadState.value += k;
   }
   renderNumpad();
@@ -5049,6 +5122,44 @@ function toggleNewPurchaseMode(){
   calc();
 }
 
+function toggleProductBPanel(){
+  const cardKey = cur==='aircon' ? 'ac' : cur;
+  const cardEl = $(cardKey + '-card');
+  if(!cardEl) return;
+  const btn = cardEl.querySelector('.add-compare-btn');
+  const panel = cardEl.querySelector('.product-b-panel');
+  if(!btn || !panel) return;
+  const isOpen = panel.classList.contains('open');
+  panel.classList.toggle('open', !isOpen);
+  btn.classList.toggle('active', !isOpen);
+  const spanEl = btn.querySelector('span');
+  if(spanEl) spanEl.textContent = isOpen ? '＋ 別の機種と比較する' : '× 比較を閉じる';
+  if(isOpen){
+    newProductBKwh = null;
+    newProductBPrice = null;
+    document.querySelectorAll('[id="nps-kwh-b-btn"]').forEach(b=>{
+      b.classList.remove('has-value');
+      b.querySelector('.nps-trigger-val').textContent='タップして入力';
+    });
+    document.querySelectorAll('[id="nps-price-b-btn"]').forEach(b=>{
+      b.classList.remove('has-value');
+      b.querySelector('.nps-trigger-val').textContent='タップして入力';
+    });
+    calc();
+  }
+}
+
+function closeProductBPanel(){
+  document.querySelectorAll('.product-b-panel').forEach(p=>{
+    p.classList.remove('open');
+  });
+  document.querySelectorAll('.add-compare-btn').forEach(b=>{
+    b.classList.remove('active');
+    const sp=b.querySelector('span');
+    if(sp) sp.textContent='＋ 別の機種と比較する';
+  });
+}
+
 function updateCompare3(curCost, aCost, bCost, aPrice, bPrice){
   const panel=$('compare3-panel');
   if(!panel) return;
@@ -5109,6 +5220,26 @@ const CAT_KWH_UNITS = {
   light:      'W/台',
   printer:    '',
 };
+
+function openUnitPriceNumpad(){
+  openNumpad('unit-price', '電力単価', '円/kWh', String($('unitPrice').value||31), val=>{
+    const v = parseFloat(val)||31;
+    $('unitPrice').value = v;
+    const disp=$('unit-price-disp');
+    if(disp) disp.textContent = v;
+    calc();
+  }, [26, 28, 31, 34]);
+}
+
+function openWaterRateNumpad(){
+  openNumpad('water-rate', '水道単価', '円/L', String($('waterRate').value||0.2725), val=>{
+    const v = parseFloat(val)||0.2725;
+    $('waterRate').value = v;
+    const disp=$('water-rate-disp');
+    if(disp) disp.textContent = v % 1 === 0 ? v : parseFloat(v.toFixed(4));
+    calc();
+  }, [0.20, 0.25, 0.27, 0.35]);
+}
 
 function openCatKwhNumpad(cat){
   const unit = CAT_KWH_UNITS[cat]||'W';
@@ -5212,7 +5343,8 @@ function updateMainPanel(curCost, newCost, curLbl, newLbl, heroLblText){
       <button class="nk" onclick="numpadKey('1')">1</button>
       <button class="nk" onclick="numpadKey('2')">2</button>
       <button class="nk" onclick="numpadKey('3')">3</button>
-      <button class="nk nk-zero" onclick="numpadKey('0')">0</button>
+      <button class="nk" onclick="numpadKey('0')">0</button>
+      <button class="nk" onclick="numpadKey('.')" id="nk-dot">.</button>
       <button class="nk nk-del" onclick="numpadKey('del')">⌫</button>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
