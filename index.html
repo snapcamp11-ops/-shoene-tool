@@ -769,6 +769,8 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',system-ui,sans-serif;backg
         <div class="ac-tat" id="ac-tatami-btns"></div>
         <div class="tv-slabel">いつ頃お買いになりましたか？</div>
         <div class="sg" id="ac-era-btns"></div>
+        <div class="tv-slabel">グレード（わからない場合は「ミドル」）</div>
+        <div class="sg" id="ac-grade-btns"></div>
         <p class="ac-hint">※冷房8時間/日・90日、暖房7時間/日・90日の概算です。</p>
       </div>
 
@@ -786,6 +788,8 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',system-ui,sans-serif;backg
             </button>
           </div>
         </div>
+        <div class="tv-slabel" style="padding-top:6px">何畳用（比較表示用）</div>
+        <div class="ac-tat" id="ac-a-tatami-btns" style="margin-bottom:8px"></div>
 
         <button class="add-compare-btn" id="add-compare-btn" onclick="toggleProductBPanel()">
           <span>＋ 別の機種と比較する</span>
@@ -793,7 +797,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',system-ui,sans-serif;backg
         <div class="product-b-panel" id="product-b-panel">
           <div class="step-header">
             <div class="step-badge green">B</div>
-            <div><div class="step-title">比較機種（製品B）</div><div class="step-hint">2機種を並べて比較できます</div></div>
+            <div><div class="step-title">比較機種（候補B）</div><div class="step-hint">2機種を並べて比較できます</div></div>
           </div>
           <div class="nps-grid">
             <div class="nps-field">
@@ -804,6 +808,8 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',system-ui,sans-serif;backg
               </button>
             </div>
           </div>
+          <div class="tv-slabel" style="padding-top:6px">何畳用（比較表示用）</div>
+          <div class="ac-tat" id="ac-b-tatami-btns" style="margin-bottom:4px"></div>
         </div>
       </div>
     </div>
@@ -1155,17 +1161,30 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',system-ui,sans-serif;backg
       <!-- 3機種比較テーブル（B機種入力時に表示） -->
       <div id="compare3-panel" style="display:none;margin-top:14px">
         <div style="font-size:.82rem;font-weight:800;color:var(--gray-700);margin-bottom:10px">📊 3機種比較</div>
+        <!-- 改善③：比較サマリー -->
+        <div id="compare3-summary" style="display:none;background:var(--gray-50);border:2px solid var(--gray-200);border-radius:12px;padding:12px 14px;margin-bottom:12px">
+          <div id="c3-sum-cur" style="font-size:.85rem;font-weight:700;color:var(--gray-600);margin-bottom:6px"></div>
+          <div style="font-size:.8rem;color:var(--gray-400);margin-left:8px;margin-bottom:4px">↓</div>
+          <div id="c3-sum-a" style="font-size:.82rem;font-weight:800;color:#2563eb;margin-bottom:5px;margin-left:8px"></div>
+          <div id="c3-sum-b" style="font-size:.82rem;font-weight:800;color:#16a34a;margin-left:8px"></div>
+        </div>
         <div style="overflow-x:auto">
           <table style="width:100%;border-collapse:collapse;font-size:.78rem">
             <thead>
               <tr>
                 <th style="padding:8px 6px;background:var(--gray-100);border-radius:6px 0 0 6px;font-weight:700;color:var(--gray-500);text-align:left"></th>
                 <th style="padding:8px 6px;background:var(--gray-100);font-weight:700;color:var(--gray-600);text-align:right" id="c3-head-cur">現在</th>
-                <th style="padding:8px 6px;background:#eff6ff;font-weight:800;color:#1d4ed8;text-align:right">製品A</th>
-                <th style="padding:8px 6px;background:#f0fdf4;font-weight:800;color:#15803d;text-align:right;border-radius:0 6px 6px 0">製品B</th>
+                <th style="padding:8px 6px;background:#eff6ff;font-weight:800;color:#1d4ed8;text-align:right">候補A</th>
+                <th style="padding:8px 6px;background:#f0fdf4;font-weight:800;color:#15803d;text-align:right;border-radius:0 6px 6px 0">候補B</th>
               </tr>
             </thead>
             <tbody>
+              <tr style="border-bottom:1px solid var(--gray-100)">
+                <td style="padding:8px 6px;color:var(--gray-500);font-weight:600">畳数</td>
+                <td style="padding:8px 6px;text-align:right;color:var(--gray-700);font-weight:700" id="c3-cur-tatami">—</td>
+                <td style="padding:8px 6px;text-align:right;color:#2563eb;font-weight:800" id="c3-a-tatami">—</td>
+                <td style="padding:8px 6px;text-align:right;color:#16a34a;font-weight:800" id="c3-b-tatami">—</td>
+              </tr>
               <tr style="border-bottom:1px solid var(--gray-100)">
                 <td style="padding:8px 6px;color:var(--gray-500);font-weight:600">年間コスト</td>
                 <td style="padding:8px 6px;text-align:right;color:var(--gray-700);font-weight:700" id="c3-cur-cost">—</td>
@@ -1779,7 +1798,7 @@ const tvSt = { size:55, era:'10年前', type:'液晶', mode:'simple', dModel:nul
 
 // エアコン診断の状態（冷房・概算メイン）
 const acSt = {
-  mode:'simple', tatami:10, era:'10年前', hours:8, temp:27,
+  mode:'simple', tatami:10, era:'10年前', grade:'mid', hours:8, temp:27,
   dModel:null, dHours:8, dTemp:27,
 };
 
@@ -1865,6 +1884,8 @@ function sel(k){
   cur=k;
   // カテゴリ変更時：製品B比較パネルをリセット
   newProductBKwh=null;
+  newProductATatami=null;
+  newProductBTatami=null;
   closeProductBPanel();
   $('sel-category').value = k;
   $('cur-category-chip').textContent = `カテゴリ: ${CFG[k].ico} ${CFG[k].name}`;
@@ -2174,6 +2195,22 @@ function acBaseForEra(tatami, era){
   if(era==='5年前') return Math.round((b.mid+b.new)/2);
   return b.new;
 }
+function acBaseForGrade(tatami, grade){
+  const b = AC_BASE_KWH[acNearestTatami(tatami)] || AC_BASE_KWH[14];
+  if(grade==='bottom') return b.old;
+  if(grade==='flagship') return b.new;
+  return b.mid;
+}
+function acBaseForEraAndGrade(tatami, era, grade){
+  const eraBase = acBaseForEra(tatami, era);
+  const factor = grade==='bottom' ? 1.15 : grade==='flagship' ? 0.85 : 1.0;
+  return Math.round(eraBase * factor);
+}
+function acGradeName(grade){
+  if(grade==='bottom') return 'ボトムモデル';
+  if(grade==='flagship') return 'フラグシップモデル';
+  return 'ミドルモデル';
+}
 
 function acTempFactor(tempC){
   const t = Math.round(Number(tempC));
@@ -2202,7 +2239,7 @@ function acLevelOf(kwh, tatami, hours, tempC){
   return               {i:4,lbl:'非常に省エネ',bc:'b-dgreen',col:'#16a34a'};
 }
 
-function acWastePoints(era, hours, tempC){
+function acWastePoints(era, grade, hours, tempC){
   const out = [];
   const tf = acTempFactor(tempC);
   if(tf>1.01){
@@ -2214,7 +2251,10 @@ function acWastePoints(era, hours, tempC){
     out.push({ico:'⏱️', txt:`使用時間が長めです（8時間基準の約${m}倍）`});
   }
   if(era==='15年以上前'||era==='10年前'){
-    out.push({ico:'📅', txt:'年式が古めの帯のため、同条件でも消費が大きめになりやすいです'});
+    out.push({ico:'📅', txt:'年式が古めのため、同条件でも消費が大きめになりやすいです'});
+  }
+  if(grade==='bottom'){
+    out.push({ico:'📋', txt:'ボトムモデルは同年式でも省エネ性能が低めの傾向があります'});
   }
   if(hours<=0){
     out.push({ico:'💤', txt:'冷房未使用に近い入力です（参考値のみ）'});
@@ -2257,7 +2297,7 @@ function acCurrentAnnual(){
     if(!acSt.dModel) return 0;
     return acAnnualKwhFromBase(acSt.dModel.kwh, acSt.dHours, acSt.dTemp);
   }
-  const base = acBaseForEra(acSt.tatami, acSt.era);
+  const base = acBaseForEraAndGrade(acSt.tatami, acSt.era, acSt.grade);
   return acAnnualKwhFromBase(base, acSt.hours, acSt.temp);
 }
 
@@ -2276,7 +2316,7 @@ function acNewAnnual(){
   return acAnnualKwhFromBase(acLatestBaseKwh(t), h, temp);
 }
 
-function acRenderViz(cK, nK, tatami, hours, tempC, era){
+function acRenderViz(cK, nK, tatami, hours, tempC, grade){
   const unit = up();
   const lvl = acLevelOf(cK, tatami, hours, tempC);
   const curCost = cK*unit, newCost = nK*unit;
@@ -2294,17 +2334,17 @@ function acRenderViz(cK, nK, tatami, hours, tempC, era){
     return `<div class="lv-seg l${i}${active?'':' dim'}">${active?`<span class="lv-now">現在</span>`:''}<span style="font-size:.56rem">${l}</span></div>`;
   }).join('');
 
-  const wastes = acWastePoints(era, hours, tempC);
+  const wastes = acWastePoints(acSt.era, grade, hours, tempC);
   const wasteHtml = wastes.length
     ? `<div class="ac-waste">${wastes.map(w=>`<div class="ac-witem"><span class="wi">${w.ico}</span><span>${w.txt}</span></div>`).join('')}</div>`
     : '';
 
-  const kwhAt27 = acAnnualKwhFromBase(acSt.mode==='detail'&&acSt.dModel ? acSt.dModel.kwh : acBaseForEra(tatami, era), hours, 27);
+  const kwhAt27 = acAnnualKwhFromBase(acSt.mode==='detail'&&acSt.dModel ? acSt.dModel.kwh : acBaseForGrade(tatami, grade), hours, 27);
   const costAt27 = kwhAt27*unit;
   const saveTemp = Math.max(0, curCost - costAt27);
 
   const h2 = Math.max(0, hours-2);
-  const baseForSim = acSt.mode==='detail'&&acSt.dModel ? acSt.dModel.kwh : acBaseForEra(tatami, era);
+  const baseForSim = acSt.mode==='detail'&&acSt.dModel ? acSt.dModel.kwh : acBaseForGrade(tatami, grade);
   const kwhH2 = acAnnualKwhFromBase(baseForSim, h2, tempC);
   const saveH = Math.max(0, curCost - kwhH2*unit);
 
@@ -2405,6 +2445,48 @@ function acBuildEraButtons(){
   });
 }
 
+function acBuildGradeButtons(){
+  const el = $('ac-grade-btns');
+  if(!el) return;
+  el.innerHTML = '';
+  [['bottom','ボトム','🔹'],['mid','ミドル','⭐'],['flagship','フラグシップ','🌟']].forEach(([g,lbl,ico])=>{
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'sgb'+(g===acSt.grade?' on':'');
+    b.innerHTML = `<span class="si">${ico}</span><span class="sl">${lbl}</span>`;
+    b.onclick = ()=>{ acSt.grade=g; acBuildGradeButtons(); acCalcAndFill(); calc(); };
+    el.appendChild(b);
+  });
+}
+
+function buildProductATatamiButtons(){
+  const el = $('ac-a-tatami-btns');
+  if(!el) return;
+  el.innerHTML = '';
+  [6,8,10,12,14,18,20].forEach(j=>{
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'ac-tatb'+(j===newProductATatami?' on':'');
+    b.innerHTML = `<span class="tj">${j}</span><span class="tl">畳</span>`;
+    b.onclick = ()=>{ newProductATatami=j; buildProductATatamiButtons(); calc(); };
+    el.appendChild(b);
+  });
+}
+
+function buildProductBTatamiButtons(){
+  const el = $('ac-b-tatami-btns');
+  if(!el) return;
+  el.innerHTML = '';
+  [6,8,10,12,14,18,20].forEach(j=>{
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'ac-tatb'+(j===newProductBTatami?' on':'');
+    b.innerHTML = `<span class="tj">${j}</span><span class="tl">畳</span>`;
+    b.onclick = ()=>{ newProductBTatami=j; buildProductBTatamiButtons(); calc(); };
+    el.appendChild(b);
+  });
+}
+
 function acBuildMakerSelect(){
   const sel = $('ac-d-maker');
   if(!sel) return;
@@ -2460,6 +2542,7 @@ function acSwitchMode(mode){
   acSt.dModel = null;
   acBuildTatamiButtons();
   acBuildEraButtons();
+  acBuildGradeButtons();
   acCalcAndFill();
   calc();
 }
@@ -2475,6 +2558,9 @@ function toggleAcCard(){
     acSt.dModel = null;
     acBuildTatamiButtons();
     acBuildEraButtons();
+    acBuildGradeButtons();
+    buildProductATatamiButtons();
+    buildProductBTatamiButtons();
     acCalcAndFill();
   }else if(cur!=='tv'){
     const cfg = CFG[cur];
@@ -4311,8 +4397,9 @@ function resetAll(){
     tvBuildSizeButtons(); tvBuildEraButtons(); tvBuildTypeButtons();
     tvCalcAndFill();
   } else if(cur==='aircon'){
-    acSt.tatami=10; acSt.era='10年前'; acSt.hours=8; acSt.temp=27;
-    acBuildTatamiButtons(); acBuildEraButtons(); acCalcAndFill(); calc();
+    acSt.tatami=10; acSt.era='10年前'; acSt.grade='mid'; acSt.hours=8; acSt.temp=27;
+    newProductATatami=null; newProductBTatami=null;
+    acBuildTatamiButtons(); acBuildEraButtons(); acBuildGradeButtons(); buildProductATatamiButtons(); buildProductBTatamiButtons(); acCalcAndFill(); calc();
   } else if(cur==='fridge'){
     fridgeSt.cap='medium'; fridgeSt.era='10年前';
     fridgeBuildCapButtons(); fridgeBuildEraButtons(); fridgeCalcAndFill();
@@ -4906,7 +4993,9 @@ function getSpecialKwh(catKey){
 }
 
 /* ═══ 3機種比較 ══════════════════════════════════════ */
-let newProductBKwh  = null; // 製品B kWh
+let newProductBKwh  = null; // 候補B kWh
+let newProductATatami = null; // 候補A 畳数
+let newProductBTatami = null; // 候補B 畳数
 let newPurchaseMode = false; // 新規購入モード（現在機種なし）
 
 function openKwhBNumpad(){
@@ -4962,10 +5051,12 @@ function toggleProductBPanel(){
   if(spanEl) spanEl.textContent = isOpen ? '＋ 別の機種と比較する' : '× 比較を閉じる';
   if(isOpen){
     newProductBKwh = null;
+    newProductBTatami = null;
     document.querySelectorAll('[id="nps-kwh-b-btn"]').forEach(b=>{
       b.classList.remove('has-value');
       b.querySelector('.nps-trigger-val').textContent='タップして入力';
     });
+    buildProductBTatamiButtons();
     calc();
   }
 }
@@ -4992,14 +5083,44 @@ function updateCompare3(curCost, aCost, bCost){
   const bSave = newPurchaseMode ? aCost - bCost : curCost - bCost;
 
   const se = v => v !== null && v !== undefined ? '¥'+fmt(v) : '—';
+
+  // 畳数表示（エアコンのみ）
+  const isAc = cur === 'aircon';
+  const curTatami = isAc ? acSt.tatami : null;
+  const aTatami   = isAc ? (newProductATatami || null) : null;
+  const bTatami   = isAc ? (newProductBTatami || null) : null;
+  const tLabel = t => t ? t + '畳' : '—';
+  const c3ct = $('c3-cur-tatami'); if(c3ct) c3ct.textContent = tLabel(curTatami);
+  const c3at = $('c3-a-tatami');   if(c3at) c3at.textContent = tLabel(aTatami);
+  const c3bt = $('c3-b-tatami');   if(c3bt) c3bt.textContent = tLabel(bTatami);
+
   $('c3-cur-cost').textContent = newPurchaseMode ? '—' : se(curCost);
   $('c3-a-cost').textContent = se(aCost);
   $('c3-b-cost').textContent = se(bCost);
-  $('c3-a-save').textContent = aSave !== null ? (aSave>0?'+':'') + se(aSave) : '—';
-  $('c3-b-save').textContent = bSave !== null ? (bSave>0?'+':'') + se(bSave) : '—';
+  $('c3-a-save').textContent = aSave !== null ? (aSave>0 ? se(aSave)+' お得' : aSave<0 ? se(-aSave)+' 増' : '同等') : '—';
+  $('c3-b-save').textContent = bSave !== null ? (bSave>0 ? se(bSave)+' お得' : bSave<0 ? se(-bSave)+' 増' : '同等') : '—';
   $('c3-a-10y').textContent = aSave!==null && aSave>0 ? se(aSave*10) : '—';
   $('c3-b-10y').textContent = bSave!==null && bSave>0 ? se(bSave*10) : '—';
 
+  // 改善③：比較サマリー（エアコンのみ表示）
+  const sumPanel = $('compare3-summary');
+  if(sumPanel){
+    if(isAc){
+      const curGrade = acGradeName(acSt.grade);
+      const sumCurEl = $('c3-sum-cur');
+      if(sumCurEl) sumCurEl.textContent = `現在：${acSt.tatami}畳 ${curGrade}`;
+      const aTatamiStr = aTatami ? `${aTatami}畳` : '';
+      const bTatamiStr = bTatami ? `${bTatami}畳` : '';
+      const saveStr = (save) => save > 0 ? `年間 約¥${fmt(save)} お得` : save < 0 ? `年間 約¥${fmt(-save)} 増` : '同等';
+      const sumAEl = $('c3-sum-a');
+      if(sumAEl) sumAEl.textContent = `候補A：${aTatamiStr} → ${saveStr(aSave)}`;
+      const sumBEl = $('c3-sum-b');
+      if(sumBEl) sumBEl.textContent = `候補B：${bTatamiStr} → ${saveStr(bSave)}`;
+      sumPanel.style.display = '';
+    } else {
+      sumPanel.style.display = 'none';
+    }
+  }
 }
 
 /* 洗濯機：新製品の使用水量入力 */
