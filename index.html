@@ -877,10 +877,10 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',system-ui,sans-serif;backg
         <div style="font-size:.72rem;font-weight:800;color:#2563eb;margin-bottom:6px">製品A</div>
         <div class="nps-grid">
           <div class="nps-field">
-            <label>年間消費電力量</label>
-            <button class="nps-trigger" id="nps-kwh-btn-washer" onclick="openKwhNumpad('washer')">
+            <label>1回あたり消費電力</label>
+            <button class="nps-trigger" id="nps-wh-btn-washer" onclick="openWasherWhNumpad()">
               <span class="nps-trigger-val">タップして入力</span>
-              <span class="nps-trigger-unit">kWh/年</span>
+              <span class="nps-trigger-unit">Wh/回</span>
             </button>
           </div>
           <div class="nps-field">
@@ -902,10 +902,17 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',system-ui,sans-serif;backg
           </div>
           <div class="nps-grid">
             <div class="nps-field">
-              <label>年間消費電力量</label>
-              <button class="nps-trigger" id="nps-kwh-b-btn" onclick="openKwhBNumpad()">
+              <label>1回あたり消費電力</label>
+              <button class="nps-trigger" id="nps-washer-b-wh-btn" onclick="openWasherBWhNumpad()">
                 <span class="nps-trigger-val">タップして入力</span>
-                <span class="nps-trigger-unit">kWh/年</span>
+                <span class="nps-trigger-unit">Wh/回</span>
+              </button>
+            </div>
+            <div class="nps-field">
+              <label>標準使用水量</label>
+              <button class="nps-trigger" id="nps-washer-b-water-btn" onclick="openWasherBWaterNumpad()">
+                <span class="nps-trigger-val">タップして入力</span>
+                <span class="nps-trigger-unit">L/回</span>
               </button>
             </div>
           </div>
@@ -2603,15 +2610,12 @@ function washerCurrentAnnual(){
   return washerCalcAnnual(washerGetPerWash(washerSt.cap,washerSt.type,washerSt.era),washerSt.freq);
 }
 function washerLatestAnnual(){
-  const inputKwh = getSpecialKwh('washer');
   const cap  = washerNearestCap(washerSt.cap);
   const type = washerSt.type;
-  const times = washerSt.freq * 52;
 
-  if(inputKwh !== null || washerNewWaterL !== null){
-    // 入力値があれば使用、なければ推定
+  if(washerNewWhPerWash !== null || washerNewWaterL !== null){
     const perWashEst = washerNewPerWash(cap, type);
-    const wh  = inputKwh !== null ? inputKwh * 1000 / Math.max(times, 1) : perWashEst.wh;
+    const wh  = washerNewWhPerWash !== null ? washerNewWhPerWash : perWashEst.wh;
     const lpr = washerNewWaterL !== null ? washerNewWaterL : perWashEst.l;
     return washerCalcAnnual({wh, l:lpr}, washerSt.freq);
   }
@@ -4341,14 +4345,16 @@ function calc(){
   calcHeatCompare(cs, ns, us, es, price);
 
   // 3機種比較（製品Bが入力されている場合）
-  if(newProductBKwh){
-    let bK = newProductBKwh;
-    let bCost = bK * price;
+  const hasWasherB = cur==='washer' && washerNewBWhPerWash !== null;
+  if(newProductBKwh || hasWasherB){
+    let bCost;
     if(cur==='washer'){
-      // 洗濯機は水道代も含む
       const bTimes = washerSt.freq*52;
-      const bWater = (washerNewWaterL||80) * bTimes * waterRate();
-      bCost = bK * price + bWater;
+      const bWh  = washerNewBWhPerWash !== null ? washerNewBWhPerWash : washerNewPerWash(washerNearestCap(washerSt.cap), washerSt.type).wh;
+      const bL   = washerNewBWaterL !== null ? washerNewBWaterL : 80;
+      bCost = (bWh/1000) * bTimes * price + bL * bTimes * waterRate();
+    } else {
+      bCost = newProductBKwh * price;
     }
     updateCompare3(cC, nC, bCost);
   } else {
@@ -4387,10 +4393,19 @@ function resetAll(){
   closeProductBPanel();
   // 新規購入モードリセット
   if(newPurchaseMode) toggleNewPurchaseMode();
-  // 洗濯機の水使用量もリセット
+  // 洗濯機のWh/回・水使用量もリセット
+  washerNewWhPerWash = null;
+  const whBtn=$('nps-wh-btn-washer');
+  if(whBtn){ whBtn.classList.remove('has-value'); whBtn.querySelector('.nps-trigger-val').textContent='タップして入力'; }
   washerNewWaterL = null;
   const wBtn=$('nps-water-btn-washer');
   if(wBtn){ wBtn.classList.remove('has-value'); wBtn.querySelector('.nps-trigger-val').textContent='タップして入力'; }
+  washerNewBWhPerWash = null;
+  washerNewBWaterL = null;
+  const wbWh=$('nps-washer-b-wh-btn');
+  if(wbWh){ wbWh.classList.remove('has-value'); wbWh.querySelector('.nps-trigger-val').textContent='タップして入力'; }
+  const wbW=$('nps-washer-b-water-btn');
+  if(wbW){ wbW.classList.remove('has-value'); wbW.querySelector('.nps-trigger-val').textContent='タップして入力'; }
   renderForms();
   if(cur==='tv'){
     tvSt.size=55; tvSt.era='10年前'; tvSt.type='液晶'; tvSt.hours=4;
@@ -4975,7 +4990,7 @@ function numpadTriggerUpdate(triggerId, val, unit){
 }
 
 // 専用カードの新製品kWh・価格入力
-let specialKwh = {aircon:'',fridge:'',washer:'',tv:''};
+let specialKwh = {aircon:'',fridge:'',tv:''};
 let specialPrice = '';
 
 function openKwhNumpad(catKey){
@@ -5056,6 +5071,12 @@ function toggleProductBPanel(){
       b.classList.remove('has-value');
       b.querySelector('.nps-trigger-val').textContent='タップして入力';
     });
+    washerNewBWhPerWash = null;
+    washerNewBWaterL = null;
+    const wbWh=$('nps-washer-b-wh-btn');
+    if(wbWh){ wbWh.classList.remove('has-value'); wbWh.querySelector('.nps-trigger-val').textContent='タップして入力'; }
+    const wbW=$('nps-washer-b-water-btn');
+    if(wbW){ wbW.classList.remove('has-value'); wbW.querySelector('.nps-trigger-val').textContent='タップして入力'; }
     buildProductBTatamiButtons();
     calc();
   }
@@ -5123,8 +5144,20 @@ function updateCompare3(curCost, aCost, bCost){
   }
 }
 
-/* 洗濯機：新製品の使用水量入力 */
-let washerNewWaterL = null; // L/回
+/* 洗濯機：新製品の1回あたり消費電力・使用水量入力 */
+let washerNewWhPerWash = null; // Wh/回（製品A）
+let washerNewWaterL = null;    // L/回（製品A）
+let washerNewBWhPerWash = null; // Wh/回（製品B）
+let washerNewBWaterL = null;    // L/回（製品B）
+
+function openWasherWhNumpad(){
+  openNumpad('washer-wh', '製品Aの1回あたり消費電力（プライスカードの数字）', 'Wh/回',
+    washerNewWhPerWash ? String(washerNewWhPerWash) : '', val=>{
+      washerNewWhPerWash = parseFloat(val)||null;
+      numpadTriggerUpdate('nps-wh-btn-washer', val, 'Wh/回');
+      if(cur==='washer') calc();
+    }, [300, 450, 600, 800]);
+}
 
 function openWaterNumpad(){
   openNumpad('washer-water', '新製品の標準使用水量（プライスカードの数字）', 'L/回',
@@ -5132,6 +5165,32 @@ function openWaterNumpad(){
       washerNewWaterL = parseFloat(val)||null;
       numpadTriggerUpdate('nps-water-btn-washer', val, 'L/回');
       if(cur==='washer') calc();
+    }, [70, 80, 95, 110]);
+}
+
+function openWasherBWhNumpad(){
+  openNumpad('washer-b-wh', '製品Bの1回あたり消費電力', 'Wh/回',
+    washerNewBWhPerWash ? String(washerNewBWhPerWash) : '', val=>{
+      washerNewBWhPerWash = parseFloat(val)||null;
+      const btn=$('nps-washer-b-wh-btn');
+      if(btn){
+        btn.classList.toggle('has-value', !!washerNewBWhPerWash);
+        btn.querySelector('.nps-trigger-val').textContent = washerNewBWhPerWash ? Number(washerNewBWhPerWash).toLocaleString('ja-JP') : 'タップして入力';
+      }
+      calc();
+    }, [300, 450, 600, 800]);
+}
+
+function openWasherBWaterNumpad(){
+  openNumpad('washer-b-water', '製品Bの標準使用水量', 'L/回',
+    washerNewBWaterL ? String(washerNewBWaterL) : '', val=>{
+      washerNewBWaterL = parseFloat(val)||null;
+      const btn=$('nps-washer-b-water-btn');
+      if(btn){
+        btn.classList.toggle('has-value', !!washerNewBWaterL);
+        btn.querySelector('.nps-trigger-val').textContent = washerNewBWaterL ? Number(washerNewBWaterL).toLocaleString('ja-JP') : 'タップして入力';
+      }
+      calc();
     }, [70, 80, 95, 110]);
 }
 
