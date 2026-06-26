@@ -771,7 +771,14 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',system-ui,sans-serif;backg
         <div class="sg" id="ac-era-btns"></div>
         <div class="tv-slabel">グレード（わからない場合は「ミドル」）</div>
         <div class="sg" id="ac-grade-btns"></div>
-        <p class="ac-hint">※冷房8時間/日・90日、暖房7時間/日・90日の概算です。</p>
+        <div class="tv-slabel">暖房も使いますか？</div>
+        <div class="sg" id="ac-heating-toggle-btns"></div>
+        <div class="tv-slabel">冷房の1日あたり使用時間</div>
+        <div class="sg" id="ac-cooling-hours-btns"></div>
+        <div id="ac-heating-hours-wrap">
+          <div class="tv-slabel">暖房の1日あたり使用時間</div>
+          <div class="sg" id="ac-heating-hours-btns"></div>
+        </div>
       </div>
 
       <div class="new-product-section">
@@ -1078,18 +1085,18 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',system-ui,sans-serif;backg
           </select>
         </div>
         <div class="fgrp">
-          <label for="kerosene-price">灯油価格</label>
-          <div class="fw">
-            <input id="kerosene-price" type="number" min="40" step="1" value="120">
-            <span class="fu">円/L</span>
-          </div>
+          <label>灯油価格</label>
+          <button class="nps-trigger" id="kerosene-price-btn" onclick="openKerosenePriceNumpad()">
+            <span class="nps-trigger-val" id="kerosene-price-disp">120</span>
+            <span class="nps-trigger-unit">円/L</span>
+          </button>
         </div>
         <div class="fgrp">
-          <label for="heater-elec">暖房器具の消費電力（任意）</label>
-          <div class="fw">
-            <input id="heater-elec" type="number" min="0" step="1" value="20">
-            <span class="fu">W</span>
-          </div>
+          <label>暖房器具の消費電力（任意）</label>
+          <button class="nps-trigger" id="heater-elec-btn" onclick="openHeaterElecNumpad()">
+            <span class="nps-trigger-val" id="heater-elec-disp">20</span>
+            <span class="nps-trigger-unit">W</span>
+          </button>
         </div>
       </div>
       <div class="sv sv-plain"><div class="sv-lbl">エアコン暖房コスト（年間）</div><div class="sv-val" id="r-heat-aircon">¥ —</div></div>
@@ -1805,7 +1812,8 @@ const tvSt = { size:55, era:'10年前', type:'液晶', mode:'simple', dModel:nul
 
 // エアコン診断の状態（冷房・概算メイン）
 const acSt = {
-  mode:'simple', tatami:10, era:'10年前', grade:'mid', hours:8, temp:27,
+  mode:'simple', tatami:10, era:'10年前', grade:'mid',
+  coolingHours:8, temp:27, useHeating:true, heatingHours:8,
   dModel:null, dHours:8, dTemp:27,
 };
 
@@ -2231,6 +2239,18 @@ function acAnnualKwhFromBase(baseKwh, hours, tempC){
   return baseKwh * (h/8) * tf;
 }
 
+// 冷房44%・暖房56%に分離して合計kWhを算出（simpleモード用）
+const AC_COOL_RATIO = 0.44;
+const AC_HEAT_RATIO = 0.56;
+function acSimpleTotal(base, coolingHours, tempC, useHeating, heatingHours){
+  const cH = Math.max(0, Number(coolingHours)||0);
+  const hH = Math.max(0, Number(heatingHours)||0);
+  const tf = acTempFactor(tempC);
+  const cK = base * AC_COOL_RATIO * (cH / 8) * tf;
+  const hK = useHeating ? base * AC_HEAT_RATIO * (hH / 8) : 0;
+  return Math.max(0, cK + hK);
+}
+
 function acAvgReferenceKwh(tatami, hours, tempC){
   const b = AC_BASE_KWH[acNearestTatami(tatami)] || AC_BASE_KWH[14];
   return acAnnualKwhFromBase(b.mid, hours, tempC);
@@ -2276,10 +2296,10 @@ function acSyncUnderlyingForms(tatami, cK, nK){
   const e_ct = el('e_ct'), e_ht = el('e_ht');
   const c_sz = el('c_size'), n_sz = el('n_size');
   const c_ck = el('c_ckwh'), c_hk = el('c_hkwh'), n_ck = el('n_ckwh'), n_hk = el('n_hkwh');
-  if(u_ch) u_ch.value = acSt.mode==='simple' ? acSt.hours : acSt.dHours;
-  if(u_cd) u_cd.value = 365;
-  if(u_hh && !u_hh.value) u_hh.value = 7;
-  if(u_hd && !u_hd.value) u_hd.value = 90;
+  if(u_ch) u_ch.value = acSt.mode==='simple' ? acSt.coolingHours : acSt.dHours;
+  if(u_cd) u_cd.value = 90;
+  if(u_hh) u_hh.value = acSt.useHeating ? acSt.heatingHours : 0;
+  if(u_hd) u_hd.value = acSt.useHeating ? 90 : 0;
   if(e_ct) e_ct.value = acSt.mode==='simple' ? acSt.temp : acSt.dTemp;
   if(e_ht && !e_ht.value) e_ht.value = 20;
   if(c_sz) c_sz.value = t;
@@ -2305,7 +2325,7 @@ function acCurrentAnnual(){
     return acAnnualKwhFromBase(acSt.dModel.kwh, acSt.dHours, acSt.dTemp);
   }
   const base = acBaseForEraAndGrade(acSt.tatami, acSt.era, acSt.grade);
-  return acAnnualKwhFromBase(base, acSt.hours, acSt.temp);
+  return acSimpleTotal(base, acSt.coolingHours, acSt.temp, acSt.useHeating, acSt.heatingHours);
 }
 
 function acLatestBaseKwh(tatami){
@@ -2318,9 +2338,7 @@ function acNewAnnual(){
   const inputKwh = getSpecialKwh('aircon');
   if(inputKwh !== null) return inputKwh;
   const t = acSt.tatami;
-  const h = acSt.hours;
-  const temp = acSt.temp;
-  return acAnnualKwhFromBase(acLatestBaseKwh(t), h, temp);
+  return acSimpleTotal(acLatestBaseKwh(t), acSt.coolingHours, acSt.temp, acSt.useHeating, acSt.heatingHours);
 }
 
 function acRenderViz(cK, nK, tatami, hours, tempC, grade){
@@ -2422,6 +2440,54 @@ function acCalcAndFill(){
   const cK = acCurrentAnnual();
   const nK = acNewAnnual();
   acSyncUnderlyingForms(tatami, cK, nK);
+}
+
+function acBuildHeatingToggle(){
+  const el = $('ac-heating-toggle-btns');
+  if(!el) return;
+  el.innerHTML = '';
+  [['使う', true], ['使わない', false]].forEach(([lbl, val])=>{
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'sgb'+(acSt.useHeating===val?' on':'');
+    b.innerHTML = `<span class="sl">${lbl}</span>`;
+    b.onclick = ()=>{
+      acSt.useHeating = val;
+      acBuildHeatingToggle();
+      const hw = $('ac-heating-hours-wrap');
+      if(hw) hw.style.display = val ? '' : 'none';
+      acCalcAndFill(); calc();
+    };
+    el.appendChild(b);
+  });
+}
+
+function acBuildCoolingHoursButtons(){
+  const el = $('ac-cooling-hours-btns');
+  if(!el) return;
+  el.innerHTML = '';
+  [4, 6, 8, 10, 12].forEach(h=>{
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'sgb'+(h===acSt.coolingHours?' on':'');
+    b.innerHTML = `<span class="sl">${h}時間</span>`;
+    b.onclick = ()=>{ acSt.coolingHours=h; acBuildCoolingHoursButtons(); acCalcAndFill(); calc(); };
+    el.appendChild(b);
+  });
+}
+
+function acBuildHeatingHoursButtons(){
+  const el = $('ac-heating-hours-btns');
+  if(!el) return;
+  el.innerHTML = '';
+  [4, 6, 8, 10, 12].forEach(h=>{
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'sgb'+(h===acSt.heatingHours?' on':'');
+    b.innerHTML = `<span class="sl">${h}時間</span>`;
+    b.onclick = ()=>{ acSt.heatingHours=h; acBuildHeatingHoursButtons(); acCalcAndFill(); calc(); };
+    el.appendChild(b);
+  });
 }
 
 function acBuildTatamiButtons(){
@@ -2550,6 +2616,10 @@ function acSwitchMode(mode){
   acBuildTatamiButtons();
   acBuildEraButtons();
   acBuildGradeButtons();
+  acBuildHeatingToggle();
+  acBuildCoolingHoursButtons();
+  acBuildHeatingHoursButtons();
+  const hw=$('ac-heating-hours-wrap'); if(hw) hw.style.display=acSt.useHeating?'':'none';
   acCalcAndFill();
   calc();
 }
@@ -2566,6 +2636,10 @@ function toggleAcCard(){
     acBuildTatamiButtons();
     acBuildEraButtons();
     acBuildGradeButtons();
+    acBuildHeatingToggle();
+    acBuildCoolingHoursButtons();
+    acBuildHeatingHoursButtons();
+    const hw=$('ac-heating-hours-wrap'); if(hw) hw.style.display=acSt.useHeating?'':'none';
     buildProductATatamiButtons();
     buildProductBTatamiButtons();
     acCalcAndFill();
@@ -4412,9 +4486,11 @@ function resetAll(){
     tvBuildSizeButtons(); tvBuildEraButtons(); tvBuildTypeButtons();
     tvCalcAndFill();
   } else if(cur==='aircon'){
-    acSt.tatami=10; acSt.era='10年前'; acSt.grade='mid'; acSt.hours=8; acSt.temp=27;
+    acSt.tatami=10; acSt.era='10年前'; acSt.grade='mid'; acSt.coolingHours=8; acSt.temp=27; acSt.useHeating=true; acSt.heatingHours=8;
     newProductATatami=null; newProductBTatami=null;
-    acBuildTatamiButtons(); acBuildEraButtons(); acBuildGradeButtons(); buildProductATatamiButtons(); buildProductBTatamiButtons(); acCalcAndFill(); calc();
+    acBuildTatamiButtons(); acBuildEraButtons(); acBuildGradeButtons(); acBuildHeatingToggle(); acBuildCoolingHoursButtons(); acBuildHeatingHoursButtons();
+    const hw2=$('ac-heating-hours-wrap'); if(hw2) hw2.style.display='';
+    buildProductATatamiButtons(); buildProductBTatamiButtons(); acCalcAndFill(); calc();
   } else if(cur==='fridge'){
     fridgeSt.cap='medium'; fridgeSt.era='10年前';
     fridgeBuildCapButtons(); fridgeBuildEraButtons(); fridgeCalcAndFill();
@@ -4776,6 +4852,35 @@ function heaterProfile(type){
   return {lph:0.22,label:'石油ストーブ'};
 }
 
+let heatKerosenePrice = db.kerosenePrice || 120;
+let heatElecW = 20;
+
+function openKerosenePriceNumpad(){
+  openNumpad('kerosene-price', '灯油価格', '円/L', String(heatKerosenePrice), val=>{
+    const v = parseFloat(val);
+    if(!isNaN(v) && v > 0){
+      heatKerosenePrice = v;
+      db.kerosenePrice = v;
+      saveDb();
+      const d = $('kerosene-price-disp');
+      if(d) d.textContent = Math.round(v);
+    }
+    calc();
+  }, [100,110,120,130,140,160]);
+}
+
+function openHeaterElecNumpad(){
+  openNumpad('heater-elec', '暖房器具の消費電力（任意）', 'W', String(heatElecW), val=>{
+    const v = parseFloat(val);
+    if(!isNaN(v) && v >= 0){
+      heatElecW = v;
+      const d = $('heater-elec-disp');
+      if(d) d.textContent = Math.round(v);
+    }
+    calc();
+  }, [0,20,50,100]);
+}
+
 function toggleHeatCompare(){
   $('heat-compare-card').style.display = cur==='aircon' ? '' : 'none';
 }
@@ -4784,10 +4889,18 @@ function calcHeatCompare(cs, ns, us, es, unitPrice){
   if(cur!=='aircon') return;
   const type=$('heat-type').value;
   const hp=heaterProfile(type);
-  const kerosenePrice=parseFloat($('kerosene-price').value)||db.kerosenePrice||120;
-  const heaterElec=parseFloat($('heater-elec').value)||0;
-  const hHours=(us.hh||0)*(us.hd||0);
-  const airconHeatKwh=airconHeatingKwh(ns,us,es);
+  const kerosenePrice = heatKerosenePrice || 120;
+  const heaterElec = heatElecW || 0;
+  // simpleモード：acStから直接取得（useHeating設定に関わらず比較は常に有効）
+  let airconHeatKwh, hHours;
+  if(acSt.mode==='simple'){
+    const hH = acSt.heatingHours;
+    airconHeatKwh = acLatestBaseKwh(acSt.tatami) * AC_HEAT_RATIO * (hH / 8);
+    hHours = hH * 90;
+  } else {
+    hHours = (us.hh||0)*(us.hd||0);
+    airconHeatKwh = airconHeatingKwh(ns, us, es);
+  }
   const airconHeatCost=airconHeatKwh*unitPrice;
   const liters=hp.lph*hHours;
   const heaterElecKwh=heaterElec*hHours/1000;
@@ -4798,8 +4911,6 @@ function calcHeatCompare(cs, ns, us, es, unitPrice){
   const dEl=$('r-heat-diff');
   dEl.className='sv-val'+(diff<0?' neg':'');
   dEl.textContent = diff>=0 ? `¥ ${fmt(diff)}（灯油暖房が安い）` : `▲¥ ${fmt(-diff)}（エアコンが安い）`;
-  db.kerosenePrice = kerosenePrice;
-  saveDb();
 }
 
 function deleteAdminItem(){
@@ -4826,7 +4937,7 @@ function _init(){
     ['categoryOptions',     ()=>{ categoryOptions('sel-category'); categoryOptions('adm-category'); }],
     ['sel-category.value',  ()=>{ $('sel-category').value=cur; $('adm-category').value=cur; }],
     ['updateMaker',         ()=>{ updateMakerByCategory('sel-maker','sel-category'); updateMakerByCategory('adm-maker','adm-category'); }],
-    ['kerosene-price',      ()=>{ $('kerosene-price').value=db.kerosenePrice||120; }],
+    ['kerosene-price',      ()=>{ heatKerosenePrice=db.kerosenePrice||120; const d=$('kerosene-price-disp'); if(d) d.textContent=Math.round(heatKerosenePrice); }],
     ['updateAdminList',     ()=>updateAdminList()],
     ['admBuildCatTabs',     ()=>admBuildCatTabs()],
     ['toggleHeatCompare',   ()=>toggleHeatCompare()],
@@ -4901,7 +5012,7 @@ $('adm-clear').addEventListener('click',clearAdminForm);
 $('adm-model').addEventListener('input',admUpdateModelSuggest);
 $('adm-model').addEventListener('blur',()=>setTimeout(()=>{ $('adm-suggest').style.display='none'; },150));
 $('adm-model').addEventListener('focus',admUpdateModelSuggest);
-['heat-type','kerosene-price','heater-elec'].forEach(id=>$(id).addEventListener('input',calc));
+$('heat-type').addEventListener('change', calc);
 
 
 /* ── テンキーUI ───────────────────────────────── */
