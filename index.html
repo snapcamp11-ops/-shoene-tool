@@ -1017,25 +1017,57 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',system-ui,sans-serif;backg
     <!-- プリンター専用診断カード -->
     <div class="card" id="printer-card" style="display:none">
       <div class="ct"><span class="ci">🖨️</span>プリンター 印刷コスト診断</div>
-      <div class="tv-slabel">① プリンタータイプ</div>
+
+      <div class="step-header">
+        <div class="step-badge">1</div>
+        <div><div class="step-title">現在お使いのプリンター</div><div class="step-hint">お客様に確認してください</div></div>
+        <button onclick="toggleNewPurchaseMode()" id="new-purchase-btn-printer" style="margin-left:auto;font-size:.7rem;padding:5px 10px;border-radius:20px;border:2px solid var(--gray-200);background:var(--gray-50);color:var(--gray-500);cursor:pointer;white-space:nowrap;touch-action:manipulation">新規購入</button>
+      </div>
+      <div class="tv-slabel">プリンタータイプ</div>
       <div class="pr-type-grid" id="pr-type-btns"></div>
-      <div class="tv-slabel">② 月間印刷枚数</div>
+      <div class="tv-slabel">月間印刷枚数</div>
       <div class="pr-row-btns" id="pr-volume-btns"></div>
-      <div class="tv-slabel">③ 印刷内容</div>
+      <div class="tv-slabel">印刷内容</div>
       <div class="pr-row-btns" id="pr-color-btns"></div>
+
       <div class="new-product-section">
-        <div class="nps-title">✨ 買い替え候補</div>
-        <div class="nps-grid">
+        <div class="step-header">
+          <div class="step-badge">2</div>
+          <div><div class="step-title">買い替え候補（製品A）</div><div class="step-hint">タイプ選択で自動入力・手入力で上書き可</div></div>
+        </div>
+        <div class="tv-slabel" style="padding-top:4px">タイプ</div>
+        <div class="pr-type-grid" id="pr-type-a-btns"></div>
+        <div class="nps-grid" style="margin-top:8px">
           <div class="nps-field">
-            <label>印刷コスト（円/枚）</label>
+            <label>印刷コスト（円/枚）を手入力で上書き</label>
             <button class="nps-trigger" id="nps-cpp-btn-printer" onclick="openPrinterCppNumpad()">
               <span class="nps-trigger-val">タップして入力</span>
               <span class="nps-trigger-unit">円/枚</span>
             </button>
           </div>
         </div>
+
+        <button class="add-compare-btn" id="pr-add-compare-btn" onclick="togglePrinterBPanel()">
+          <span>＋ 別の機種と比較する</span>
+        </button>
+        <div class="product-b-panel" id="pr-product-b-panel">
+          <div class="step-header">
+            <div class="step-badge green">B</div>
+            <div><div class="step-title">比較機種（候補B）</div><div class="step-hint">2機種を並べて比較できます</div></div>
+          </div>
+          <div class="tv-slabel" style="padding-top:4px">タイプ</div>
+          <div class="pr-type-grid" id="pr-type-b-btns"></div>
+          <div class="nps-grid" style="margin-top:8px">
+            <div class="nps-field">
+              <label>印刷コスト（円/枚）を手入力で上書き</label>
+              <button class="nps-trigger" id="nps-cpp-b-btn-printer" onclick="openPrinterCppBNumpad()">
+                <span class="nps-trigger-val">タップして入力</span>
+                <span class="nps-trigger-unit">円/枚</span>
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
-      <div id="pr-result-area" style="display:none"></div>
     </div>
 
     <!-- 照明専用診断カード -->
@@ -1193,14 +1225,14 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',system-ui,sans-serif;backg
               </tr>
             </thead>
             <tbody>
-              <tr style="border-bottom:1px solid var(--gray-100)">
-                <td style="padding:8px 6px;color:var(--gray-500);font-weight:600">畳数</td>
+              <tr style="border-bottom:1px solid var(--gray-100)" id="c3-row-extra">
+                <td style="padding:8px 6px;color:var(--gray-500);font-weight:600" id="c3-extra-lbl">畳数</td>
                 <td style="padding:8px 6px;text-align:right;color:var(--gray-700);font-weight:700" id="c3-cur-tatami">—</td>
                 <td style="padding:8px 6px;text-align:right;color:#2563eb;font-weight:800" id="c3-a-tatami">—</td>
                 <td style="padding:8px 6px;text-align:right;color:#16a34a;font-weight:800" id="c3-b-tatami">—</td>
               </tr>
               <tr style="border-bottom:1px solid var(--gray-100)">
-                <td style="padding:8px 6px;color:var(--gray-500);font-weight:600">年間コスト</td>
+                <td style="padding:8px 6px;color:var(--gray-500);font-weight:600" id="c3-cost-lbl">年間コスト</td>
                 <td style="padding:8px 6px;text-align:right;color:var(--gray-700);font-weight:700" id="c3-cur-cost">—</td>
                 <td style="padding:8px 6px;text-align:right;color:#2563eb;font-weight:800" id="c3-a-cost">—</td>
                 <td style="padding:8px 6px;text-align:right;color:#16a34a;font-weight:800" id="c3-b-cost">—</td>
@@ -1807,6 +1839,16 @@ const CFG = {
 let cur='aircon';
 const $ = id => document.getElementById(id);
 
+// 専用カードの新製品kWh・価格入力（_init()より前に宣言する必要がある）
+let specialKwh = {aircon:'',fridge:'',tv:''};
+let specialPrice = '';
+
+// 3機種比較用の状態（_init()より前に宣言する必要がある）
+let newProductBKwh  = null; // 候補B kWh
+let newProductATatami = null; // 候補A 畳数
+let newProductBTatami = null; // 候補B 畳数
+let newPurchaseMode = false; // 新規購入モード（現在機種なし）
+
 // TV診断の状態
 const tvSt = { size:55, era:'10年前', type:'液晶', mode:'simple', dModel:null, hours:4, dHours:4 };
 
@@ -1901,6 +1943,7 @@ function sel(k){
   newProductBKwh=null;
   newProductATatami=null;
   newProductBTatami=null;
+  printerNewCppB=null;
   closeProductBPanel();
   $('sel-category').value = k;
   $('cur-category-chip').textContent = `カテゴリ: ${CFG[k].ico} ${CFG[k].name}`;
@@ -4036,11 +4079,15 @@ function toggleBidetCard(){
 
 /* ════════════════════════ プリンター専用関数 ════════════════════════ */
 
-// プリンター状態
+// 現在機・候補A/B の状態
 const printerSt = {
-  type:   'インクジェット', // インクジェット / エコタンク / レーザー
-  volume: '普通',           // 少ない / 普通 / 多い
-  color:  'カラー多め',     // モノクロ中心 / カラー多め
+  type:   'インクジェット',
+  volume: '普通',
+  color:  'カラー多め',
+};
+const printerNewSt = {
+  typeA: 'エコタンク',
+  typeB: 'エコタンク',
 };
 
 // 1枚あたりコスト（円/枚）
@@ -4049,36 +4096,66 @@ const PR_CPP = {
   'エコタンク':     { 'モノクロ中心':  2, 'カラー多め':  5 },
   'レーザー':       { 'モノクロ中心':  5, 'カラー多め': 15 },
 };
-// 月間枚数
 const PR_VOL = { '少ない': 10, '普通': 50, '多い': 100 };
 
 function printerCurrentCpp(){ return PR_CPP[printerSt.type][printerSt.color]; }
-function printerEcoCpp()    { return PR_CPP['エコタンク'][printerSt.color]; }
 function printerMonthlyPages(){ return PR_VOL[printerSt.volume]; }
 function printerMonthlyCost(cpp){ return cpp * printerMonthlyPages(); }
 function printerAnnualCost(cpp) { return printerMonthlyCost(cpp) * 12; }
 
-function printerRating(cpp){
-  if(cpp >= 20) return {label:'コスト高め',  color:'#dc2626', bg:'#fee2e2'};
-  if(cpp >= 10) return {label:'やや高め',    color:'#b45309', bg:'#fef3c7'};
-  if(cpp >= 5)  return {label:'標準的',      color:'#1d4ed8', bg:'#dbeafe'};
-  return               {label:'コスト優秀',  color:'#15803d', bg:'#dcfce7'};
+// 候補A/B の実効コスト（手入力があれば優先）
+function printerNewACpp(){
+  return printerNewCpp !== null ? printerNewCpp : PR_CPP[printerNewSt.typeA][printerSt.color];
+}
+function printerNewBCpp(){
+  return printerNewCppB !== null ? printerNewCppB : PR_CPP[printerNewSt.typeB][printerSt.color];
+}
+function printerNewALabel(){
+  return printerNewCpp !== null ? `製品A（手入力：${printerNewCpp}円/枚）` : `製品A（${printerNewSt.typeA}）`;
+}
+function printerNewBLabel(){
+  return printerNewCppB !== null ? `製品B（手入力：${printerNewCppB}円/枚）` : `製品B（${printerNewSt.typeB}）`;
 }
 
-// ── ボタン構築 ───────────────────────────────────────
+// ── ボタン構築 ─────────────────────────────────────
+const PR_TYPES = [
+  {v:'インクジェット', ico:'🖨️', sub:'カートリッジ式'},
+  {v:'エコタンク',     ico:'💧', sub:'大容量タンク式'},
+  {v:'レーザー',       ico:'⚡', sub:'トナー式'},
+];
+
 function prBuildTypeBtns(){
-  const types = [
-    {v:'インクジェット', ico:'🖨️', sub:'カートリッジ式'},
-    {v:'エコタンク',     ico:'💧', sub:'大容量タンク式'},
-    {v:'レーザー',       ico:'⚡', sub:'トナー式'},
-  ];
   const el=$('pr-type-btns'); if(!el) return;
   el.innerHTML='';
-  types.forEach(t=>{
+  PR_TYPES.forEach(t=>{
     const b=document.createElement('button');
     b.className='pr-typb'+(printerSt.type===t.v?' on':'');
     b.innerHTML=`<span class="pr-ico">${t.ico}</span><span class="pr-nm">${t.v}</span><span class="pr-sub">${t.sub}</span>`;
     b.onclick=()=>{ printerSt.type=t.v; prBuildTypeBtns(); printerCalcAndFill(); printerRenderViz(); };
+    el.appendChild(b);
+  });
+}
+
+function prBuildTypeABtns(){
+  const el=$('pr-type-a-btns'); if(!el) return;
+  el.innerHTML='';
+  PR_TYPES.forEach(t=>{
+    const b=document.createElement('button');
+    b.className='pr-typb'+(printerNewSt.typeA===t.v?' on':'');
+    b.innerHTML=`<span class="pr-ico">${t.ico}</span><span class="pr-nm">${t.v}</span><span class="pr-sub">${t.sub}</span>`;
+    b.onclick=()=>{ printerNewSt.typeA=t.v; prBuildTypeABtns(); printerCalcAndFill(); printerRenderViz(); };
+    el.appendChild(b);
+  });
+}
+
+function prBuildTypeBBtns(){
+  const el=$('pr-type-b-btns'); if(!el) return;
+  el.innerHTML='';
+  PR_TYPES.forEach(t=>{
+    const b=document.createElement('button');
+    b.className='pr-typb'+(printerNewSt.typeB===t.v?' on':'');
+    b.innerHTML=`<span class="pr-ico">${t.ico}</span><span class="pr-nm">${t.v}</span><span class="pr-sub">${t.sub}</span>`;
+    b.onclick=()=>{ printerNewSt.typeB=t.v; prBuildTypeBBtns(); printerCalcAndFill(); };
     el.appendChild(b);
   });
 }
@@ -4099,71 +4176,41 @@ function prBuildRowBtns(containerId, items, key){
 function printerCalcAndFill(){
   if(cur!=='printer') return;
   const cpp     = printerCurrentCpp();
-  const ecoCpp  = printerEcoCpp();
-  const pages   = printerMonthlyPages();
-  const mCost   = printerMonthlyCost(cpp);
+  const newACpp = printerNewACpp();
   const yCost   = printerAnnualCost(cpp);
-  const ecoMCost= printerMonthlyCost(ecoCpp);
-  const ecoYCost= printerAnnualCost(ecoCpp);
-  const saveM   = mCost - ecoMCost;
-  const saveY   = yCost - ecoYCost;
-  const pct     = yCost > 0 ? Math.round(saveY / yCost * 100) : 0;
-  const rating  = printerRating(cpp);
-  const isEco   = printerSt.type === 'エコタンク';
+  const newAYCost = printerAnnualCost(newACpp);
 
-  const el=$('pr-result-area'); if(!el) return;
-
-  el.innerHTML=`
-    <div class="pr-cost-hero">
-      <div class="pr-h-lbl">1枚あたりの印刷コスト</div>
-      <div class="pr-h-val">${cpp}<span class="pr-h-unit">円</span></div>
-      <span class="pr-rating" style="background:${rating.bg};color:${rating.color}">${rating.label}</span>
-    </div>
-    <div class="pr-monthly-row">
-      <div class="pr-cost-box">
-        <div class="pr-cb-lbl">月間コスト（${pages}枚）</div>
-        <div class="pr-cb-val">¥${fmt(mCost)}</div>
-      </div>
-      <div class="pr-cost-box">
-        <div class="pr-cb-lbl">年間コスト</div>
-        <div class="pr-cb-val">¥${fmt(yCost)}</div>
-      </div>
-    </div>
-    ${isEco ? `
-    <div style="background:var(--green-l);border:2px solid var(--green-m);border-radius:12px;padding:14px;text-align:center;margin-top:8px">
-      <div style="font-size:1.2rem;font-weight:900;color:var(--green);margin-bottom:4px">✅ エコタンク採用済み</div>
-      <div style="font-size:.78rem;color:var(--green)">印刷コストは業界最安水準です。</div>
-    </div>` : `
-    <div style="background:var(--amber-l);border:2px solid var(--amber-m);border-radius:12px;padding:12px;margin-top:8px;text-align:center">
-      <div style="font-size:.78rem;font-weight:700;color:#92400e">エコタンクに切り替えると</div>
-      <div style="font-size:1.5rem;font-weight:900;color:var(--amber);line-height:1.2">年間 ¥${fmt(saveY)} 節約</div>
-      <div style="font-size:.7rem;color:#b45309;margin-top:2px">月${pages}枚印刷の場合</div>
-    </div>`}`;
-
-  // メインパネル更新（印刷コスト：新製品入力があれば優先）
-  const newCppVal = printerNewCpp !== null ? printerNewCpp : (isEco ? cpp : ecoCpp);
-  const newYCost = newCppVal * pages * 12;
-  updateMainPanel(yCost, newYCost,
+  // メインパネル更新
+  updateMainPanel(yCost, newAYCost,
     '現在の年間印刷コスト', '買い替え後の年間印刷コスト', '年間印刷コスト節約額');
+
+  // 候補B比較
+  if(printerNewCppB !== null){
+    const newBYCost = printerAnnualCost(printerNewBCpp());
+    updateCompare3(yCost, newAYCost, newBYCost);
+  } else {
+    const c3 = $('compare3-panel'); if(c3) c3.style.display='none';
+  }
 }
 
 // ── 右パネルViz ─────────────────────────────────────
 function printerRenderViz(){
   if(cur!=='printer') return;
   const cpp     = printerCurrentCpp();
-  const ecoCpp  = printerEcoCpp();
+  const newACpp = printerNewACpp();
   const pages   = printerMonthlyPages();
   const mCost   = printerMonthlyCost(cpp);
   const yCost   = printerAnnualCost(cpp);
-  const ecoMCost= printerMonthlyCost(ecoCpp);
-  const ecoYCost= printerAnnualCost(ecoCpp);
-  const saveY   = yCost - ecoYCost;
-  const saveM   = mCost - ecoMCost;
+  const newAMCost = printerMonthlyCost(newACpp);
+  const newAYCost = printerAnnualCost(newACpp);
+  const saveY   = yCost - newAYCost;
+  const saveM   = mCost - newAMCost;
   const pct     = yCost > 0 ? Math.round(saveY / yCost * 100) : 0;
   const isEco   = printerSt.type === 'エコタンク';
-  const mx      = Math.max(mCost, ecoMCost, 1);
+  const mx      = Math.max(mCost, newAMCost, 1);
   const barCW   = (mCost / mx * 100).toFixed(1);
-  const barNW   = (ecoMCost / mx * 100).toFixed(1);
+  const barNW   = (newAMCost / mx * 100).toFixed(1);
+  const aLabel  = printerNewALabel();
 
   const el=$('pr-viz-res'); if(!el) return;
   el.innerHTML=`
@@ -4177,9 +4224,9 @@ function printerRenderViz(){
         </div>
         <div class="vsbadge">VS</div>
         <div class="tvvc eco">
-          <div class="vl">エコタンク</div>
-          <div class="vk">${ecoCpp}<span style="font-size:.6rem"> 円/枚</span></div>
-          <div class="vy">¥${fmt(ecoMCost)}/月</div>
+          <div class="vl">${aLabel}</div>
+          <div class="vk">${newACpp}<span style="font-size:.6rem"> 円/枚</span></div>
+          <div class="vy">¥${fmt(newAMCost)}/月</div>
         </div>
       </div>
       <div class="bars" style="margin-bottom:10px">
@@ -4188,17 +4235,17 @@ function printerRenderViz(){
           <div class="bar-tr"><div class="bar-fill bf-c" style="width:${barCW}%"></div></div>
         </div>
         <div class="bar-row">
-          <div class="bar-hd"><span>エコタンク</span><span>${ecoCpp}円/枚</span></div>
+          <div class="bar-hd"><span>${aLabel}</span><span>${newACpp}円/枚</span></div>
           <div class="bar-tr"><div class="bar-fill bf-n" style="width:${barNW}%"></div></div>
         </div>
       </div>
-      ${isEco ? `
+      ${isEco && newACpp >= cpp ? `
       <div class="tvsbig" style="background:var(--green-l);border:2px solid var(--green-m)">
-        <div class="tsl" style="color:var(--green)">✅ 最安水準のコストです</div>
+        <div class="tsl" style="color:var(--green)">✅ 現在機がコスト最安水準です</div>
         <div class="tsv" style="color:var(--green)">印刷コスト優秀</div>
-      </div>` : `
+      </div>` : saveY > 0 ? `
       <div class="tvsbig">
-        <div class="tsl">年間節約額（エコタンク比）</div>
+        <div class="tsl">年間節約額</div>
         <div class="tsv">¥${fmt(saveY)} 削減</div>
       </div>
       <div class="tvsrow"><span class="tsl">削減率</span><span class="tsv">${pct}% 削減</span></div>
@@ -4207,12 +4254,16 @@ function printerRenderViz(){
         <div style="font-size:.72rem;color:#92400e;font-weight:700">このままだと年間</div>
         <div style="font-size:1.8rem;font-weight:900;color:#92400e;line-height:1.1">¥${fmt(saveY)}</div>
         <div style="font-size:.7rem;color:#b45309;margin-top:2px">余計にかかっています</div>
+      </div>` : `
+      <div class="tvsbig" style="background:#f0fdf4;border:2px solid #bbf7d0">
+        <div class="tsl" style="color:#15803d">候補Aの方が割高または同等です</div>
+        <div class="tsv" style="color:#15803d">現在機で継続が有利</div>
       </div>`}
       <div style="font-size:.68rem;color:var(--gray-400);margin-top:10px;text-align:center">月${pages}枚・${printerSt.color}の場合の概算</div>
     </div>`;
 }
 
-// ── トグル ──────────────────────────────────────────
+// ── トグル（カード表示） ───────────────────────────
 function togglePrinterCard(){
   const isPR = cur==='printer';
   const pc=$('printer-card');
@@ -4222,6 +4273,8 @@ function togglePrinterCard(){
     $('card-n').style.display='none';
     $('card-e').style.display='none';
     prBuildTypeBtns();
+    prBuildTypeABtns();
+    prBuildTypeBBtns();
     prBuildRowBtns('pr-volume-btns',[
       {l:'少ない<br><span style="font-size:.7rem;color:var(--gray-500)">10枚/月</span>',  v:'少ない'},
       {l:'普通<br><span style="font-size:.7rem;color:var(--gray-500)">50枚/月</span>',   v:'普通'},
@@ -4231,6 +4284,28 @@ function togglePrinterCard(){
       {l:'モノクロ中心', v:'モノクロ中心'},
       {l:'カラー多め',   v:'カラー多め'},
     ],'color');
+    printerCalcAndFill();
+  }
+}
+
+// ── 候補Bパネル トグル ──────────────────────────────
+function togglePrinterBPanel(){
+  const panel = $('pr-product-b-panel');
+  const btn   = $('pr-add-compare-btn');
+  if(!panel) return;
+  const opening = !panel.classList.contains('open');
+  panel.classList.toggle('open', opening);
+  if(btn){
+    btn.classList.toggle('active', opening);
+    const sp=btn.querySelector('span'); if(sp) sp.textContent = opening ? '✕ 比較を閉じる' : '＋ 別の機種と比較する';
+  }
+  if(opening){
+    prBuildTypeBBtns();
+    printerCalcAndFill();
+  } else {
+    printerNewCppB = null;
+    const bBtn = $('nps-cpp-b-btn-printer');
+    if(bBtn){ bBtn.classList.remove('has-value'); bBtn.querySelector('.nps-trigger-val').textContent='タップして入力'; }
     printerCalcAndFill();
   }
 }
@@ -4458,6 +4533,15 @@ function resetAll(){
   printerNewCpp = null;
   const cppBtn=$('nps-cpp-btn-printer');
   if(cppBtn){ cppBtn.classList.remove('has-value'); cppBtn.querySelector('.nps-trigger-val').textContent='タップして入力'; }
+  printerNewCppB = null;
+  const cppBBtn=$('nps-cpp-b-btn-printer');
+  if(cppBBtn){ cppBBtn.classList.remove('has-value'); cppBBtn.querySelector('.nps-trigger-val').textContent='タップして入力'; }
+  printerNewSt.typeA = 'エコタンク';
+  printerNewSt.typeB = 'エコタンク';
+  const prBPanel = $('pr-product-b-panel');
+  if(prBPanel){ prBPanel.classList.remove('open'); }
+  const prAddBtn = $('pr-add-compare-btn');
+  if(prAddBtn){ const sp=prAddBtn.querySelector('span'); if(sp) sp.textContent='＋ 別の機種と比較する'; }
   // 製品Bリセット
   newProductBKwh=null;
   document.querySelectorAll('[id="nps-kwh-b-btn"]').forEach(btn=>{
@@ -4497,6 +4581,20 @@ function resetAll(){
   } else if(cur==='washer'){
     washerSt.cap=7; washerSt.type='縦型'; washerSt.era='5年前'; washerSt.freq=4;
     washerBuildCapButtons(); washerBuildTypeButtons(); washerBuildEraButtons(); washerBuildFreqButtons(); washerCalcAndFill();
+  } else if(cur==='printer'){
+    printerSt.type='インクジェット'; printerSt.volume='普通'; printerSt.color='カラー多め';
+    prBuildTypeBtns();
+    prBuildTypeABtns(); prBuildTypeBBtns();
+    prBuildRowBtns('pr-volume-btns',[
+      {l:'少ない<br><span style="font-size:.7rem;color:var(--gray-500)">10枚/月</span>',  v:'少ない'},
+      {l:'普通<br><span style="font-size:.7rem;color:var(--gray-500)">50枚/月</span>',   v:'普通'},
+      {l:'多い<br><span style="font-size:.7rem;color:var(--gray-500)">100枚以上</span>', v:'多い'},
+    ],'volume');
+    prBuildRowBtns('pr-color-btns',[
+      {l:'モノクロ中心', v:'モノクロ中心'},
+      {l:'カラー多め',   v:'カラー多め'},
+    ],'color');
+    printerCalcAndFill();
   } else {
     calc();
   }
@@ -5100,10 +5198,6 @@ function numpadTriggerUpdate(triggerId, val, unit){
   }
 }
 
-// 専用カードの新製品kWh・価格入力
-let specialKwh = {aircon:'',fridge:'',tv:''};
-let specialPrice = '';
-
 function openKwhNumpad(catKey){
   const sc = (NUMPAD_SHORTCUTS[catKey]||{}).kwh||[];
   openNumpad('nps-kwh-'+catKey, '新製品の年間消費電力量（プライスカードの数字）', 'kWh/年',
@@ -5119,11 +5213,6 @@ function getSpecialKwh(catKey){
 }
 
 /* ═══ 3機種比較 ══════════════════════════════════════ */
-let newProductBKwh  = null; // 候補B kWh
-let newProductATatami = null; // 候補A 畳数
-let newProductBTatami = null; // 候補B 畳数
-let newPurchaseMode = false; // 新規購入モード（現在機種なし）
-
 function openKwhBNumpad(){
   const sc = (NUMPAD_SHORTCUTS[cur]||{}).kwh||[];
   openNumpad('kwh-b', '製品Bの年間消費電力量', 'kWh/年',
@@ -5140,12 +5229,12 @@ function openKwhBNumpad(){
 function toggleNewPurchaseMode(){
   newPurchaseMode = !newPurchaseMode;
   // 現在機種入力エリアを表示/非表示
-  const curCards = ['ac-card','fridge-card','washer-card','tv-card'];
+  const curCards = ['ac-card','fridge-card','washer-card','tv-card','printer-card'];
   curCards.forEach(id=>{
     const card=$(id);
     if(!card || card.style.display==='none') return;
     // 現在機種の選択ボタン群を非表示/表示
-    const labels = card.querySelectorAll('.tv-slabel:first-of-type, .ac-tat, .sg, .fridge-cap-grid, .washer-cap-row, .washer-type-grid, .fridge-warn, .ac-hint');
+    const labels = card.querySelectorAll('.tv-slabel:first-of-type, .ac-tat, .sg, .fridge-cap-grid, .washer-cap-row, .washer-type-grid, .fridge-warn, .ac-hint, .pr-type-grid, .pr-row-btns');
     labels.forEach(el=>{
       if(!el.closest('.new-product-section')) el.style.opacity = newPurchaseMode ? '0.3' : '1';
     });
@@ -5216,17 +5305,40 @@ function updateCompare3(curCost, aCost, bCost){
 
   const se = v => v !== null && v !== undefined ? '¥'+fmt(v) : '—';
 
-  // 畳数表示（エアコンのみ）
-  const isAc = cur === 'aircon';
-  const curTatami = isAc ? acSt.tatami : null;
-  const aTatami   = isAc ? (newProductATatami || null) : null;
-  const bTatami   = isAc ? (newProductBTatami || null) : null;
-  const tLabel = t => t ? t + '畳' : '—';
-  const c3ct = $('c3-cur-tatami'); if(c3ct) c3ct.textContent = tLabel(curTatami);
-  const c3at = $('c3-a-tatami');   if(c3at) c3at.textContent = tLabel(aTatami);
-  const c3bt = $('c3-b-tatami');   if(c3bt) c3bt.textContent = tLabel(bTatami);
+  const isAc      = cur === 'aircon';
+  const isPrinter = cur === 'printer';
 
-  $('c3-cur-cost').textContent = newPurchaseMode ? '—' : se(curCost);
+  // 1行目ラベル切り替え（畳数 / 印刷コスト / 非表示）
+  const extraRow = $('c3-row-extra');
+  const extraLbl = $('c3-extra-lbl');
+  const costLbl  = $('c3-cost-lbl');
+  if(isPrinter){
+    if(extraRow) extraRow.style.display = '';
+    if(extraLbl) extraLbl.textContent = '1枚コスト';
+    if(costLbl)  costLbl.textContent  = '年間印刷コスト';
+    const curCpp = printerCurrentCpp();
+    const aCpp   = printerNewACpp();
+    const bCpp   = printerNewBCpp();
+    const c3ct = $('c3-cur-tatami'); if(c3ct) c3ct.textContent = curCpp + '円';
+    const c3at = $('c3-a-tatami');   if(c3at) c3at.textContent = aCpp   + '円';
+    const c3bt = $('c3-b-tatami');   if(c3bt) c3bt.textContent = bCpp   + '円';
+  } else if(isAc){
+    if(extraRow) extraRow.style.display = '';
+    if(extraLbl) extraLbl.textContent = '畳数';
+    if(costLbl)  costLbl.textContent  = '年間コスト';
+    const curTatami = acSt.tatami;
+    const aTatami   = newProductATatami || null;
+    const bTatami   = newProductBTatami || null;
+    const tLabel = t => t ? t + '畳' : '—';
+    const c3ct = $('c3-cur-tatami'); if(c3ct) c3ct.textContent = tLabel(curTatami);
+    const c3at = $('c3-a-tatami');   if(c3at) c3at.textContent = tLabel(aTatami);
+    const c3bt = $('c3-b-tatami');   if(c3bt) c3bt.textContent = tLabel(bTatami);
+  } else {
+    if(extraRow) extraRow.style.display = 'none';
+    if(costLbl)  costLbl.textContent  = '年間コスト';
+  }
+
+  $('c3-cur-cost').textContent = (newPurchaseMode && !isPrinter) ? '—' : se(curCost);
   $('c3-a-cost').textContent = se(aCost);
   $('c3-b-cost').textContent = se(bCost);
   $('c3-a-save').textContent = aSave !== null ? (aSave>0 ? se(aSave)+' お得' : aSave<0 ? se(-aSave)+' 増' : '同等') : '—';
@@ -5234,20 +5346,29 @@ function updateCompare3(curCost, aCost, bCost){
   $('c3-a-10y').textContent = aSave!==null && aSave>0 ? se(aSave*10) : '—';
   $('c3-b-10y').textContent = bSave!==null && bSave>0 ? se(bSave*10) : '—';
 
-  // 改善③：比較サマリー（エアコンのみ表示）
+  // 比較サマリー（エアコン・プリンターで内容を分岐）
   const sumPanel = $('compare3-summary');
   if(sumPanel){
     if(isAc){
       const curGrade = acGradeName(acSt.grade);
       const sumCurEl = $('c3-sum-cur');
       if(sumCurEl) sumCurEl.textContent = `現在：${acSt.tatami}畳 ${curGrade}`;
-      const aTatamiStr = aTatami ? `${aTatami}畳` : '';
-      const bTatamiStr = bTatami ? `${bTatami}畳` : '';
+      const aTatami   = newProductATatami || null;
+      const bTatami   = newProductBTatami || null;
       const saveStr = (save) => save > 0 ? `年間 約¥${fmt(save)} お得` : save < 0 ? `年間 約¥${fmt(-save)} 増` : '同等';
       const sumAEl = $('c3-sum-a');
-      if(sumAEl) sumAEl.textContent = `候補A：${aTatamiStr} → ${saveStr(aSave)}`;
+      if(sumAEl) sumAEl.textContent = `候補A：${aTatami ? aTatami+'畳' : ''} → ${saveStr(aSave)}`;
       const sumBEl = $('c3-sum-b');
-      if(sumBEl) sumBEl.textContent = `候補B：${bTatamiStr} → ${saveStr(bSave)}`;
+      if(sumBEl) sumBEl.textContent = `候補B：${bTatami ? bTatami+'畳' : ''} → ${saveStr(bSave)}`;
+      sumPanel.style.display = '';
+    } else if(isPrinter){
+      const saveStr = (save) => save > 0 ? `年間 約¥${fmt(save)} お得` : save < 0 ? `年間 約¥${fmt(-save)} 増` : '同等';
+      const sumCurEl = $('c3-sum-cur');
+      if(sumCurEl) sumCurEl.textContent = `現在：${printerSt.type}（${printerCurrentCpp()}円/枚）`;
+      const sumAEl = $('c3-sum-a');
+      if(sumAEl) sumAEl.textContent = `${printerNewALabel()} → ${saveStr(aSave)}`;
+      const sumBEl = $('c3-sum-b');
+      if(sumBEl) sumBEl.textContent = `${printerNewBLabel()} → ${saveStr(bSave)}`;
       sumPanel.style.display = '';
     } else {
       sumPanel.style.display = 'none';
@@ -5359,16 +5480,30 @@ function openCatKwhNumpad(cat){
 }
 
 /* プリンター専用：印刷コスト入力 */
-let printerNewCpp = null;
+let printerNewCpp  = null; // 製品A 手入力上書き
+let printerNewCppB = null; // 製品B 手入力上書き
 
 function openPrinterCppNumpad(){
-  openNumpad('printer-cpp', '買い替え候補の印刷コスト（円/枚）', '円/枚',
+  openNumpad('printer-cpp', '製品Aの印刷コスト（円/枚）', '円/枚',
     printerNewCpp ? String(printerNewCpp) : '', val=>{
       printerNewCpp = parseFloat(val)||null;
       const btn=$('nps-cpp-btn-printer');
       if(btn){
-        btn.classList.add('has-value');
-        btn.querySelector('.nps-trigger-val').textContent = val;
+        btn.classList.toggle('has-value', !!printerNewCpp);
+        btn.querySelector('.nps-trigger-val').textContent = printerNewCpp ? val : 'タップして入力';
+      }
+      if(cur==='printer') calc();
+    }, [1, 2, 3, 5, 8, 12]);
+}
+
+function openPrinterCppBNumpad(){
+  openNumpad('printer-cpp-b', '製品Bの印刷コスト（円/枚）', '円/枚',
+    printerNewCppB ? String(printerNewCppB) : '', val=>{
+      printerNewCppB = parseFloat(val)||null;
+      const btn=$('nps-cpp-b-btn-printer');
+      if(btn){
+        btn.classList.toggle('has-value', !!printerNewCppB);
+        btn.querySelector('.nps-trigger-val').textContent = printerNewCppB ? val : 'タップして入力';
       }
       if(cur==='printer') calc();
     }, [1, 2, 3, 5, 8, 12]);
